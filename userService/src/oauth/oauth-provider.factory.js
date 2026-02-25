@@ -5,11 +5,11 @@ import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 
 export class OAuthProviderFactory {
-  constructor(env) {
+  constructor() {
     this.providers = new Map([
-      ['google', new GoogleOAuthProvider(env)],
-      ['facebook', new FacebookOAuthProvider(env)],
-      ['apple', new AppleOAuthProvider(env)],
+      ['google', new GoogleOAuthProvider()],
+      ['facebook', new FacebookOAuthProvider()],
+      ['apple', new AppleOAuthProvider()],
     ]);
   }
 
