@@ -3,11 +3,11 @@ export class OAuthProvider {
     throw new Error('Not implemented');
   }
 
-  getAuthorizationUrl(_state, _codeChallenge) {
+  getAuthorizationUrl(_payload) {
     throw new Error('Not implemented');
   }
 
-  async exchangeCodeForProfile(_code) {
+  async exchangeCodeForProfile(_payload) {
     throw new Error('Not implemented');
   }
 }
