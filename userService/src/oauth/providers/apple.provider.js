@@ -3,20 +3,14 @@ import { ApiError } from '../../utils/api-error.js';
 import { ERROR_CODES } from '../../constants/errors.js';
 
 export class AppleOAuthProvider extends OAuthProvider {
-  constructor(env) {
-    super();
-    this.clientId = env.APPLE_CLIENT_ID;
-    this.redirectUri = env.APPLE_REDIRECT_URI;
-  }
-
   getName() {
     return 'apple';
   }
 
-  getAuthorizationUrl(state, codeChallenge) {
+  getAuthorizationUrl({ state, codeChallenge, clientConfig }) {
     const url = new URL('https://appleid.apple.com/auth/authorize');
-    url.searchParams.set('client_id', this.clientId);
-    url.searchParams.set('redirect_uri', this.redirectUri);
+    url.searchParams.set('client_id', clientConfig.clientId);
+    url.searchParams.set('redirect_uri', clientConfig.redirectUri);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('response_mode', 'query');
     url.searchParams.set('scope', 'name email');
@@ -28,8 +22,9 @@ export class AppleOAuthProvider extends OAuthProvider {
     return url.toString();
   }
 
-  async exchangeCodeForProfile() {
+  async exchangeCodeForProfile({ clientConfig }) {
     // TODO: Implement Apple token exchange + ID token validation using Apple JWKS.
+    // TODO: Use platform-aware clientConfig for web/ios/desktop specific Apple app identifiers.
     // TODO: Handle first-login-only name payload and email relay address caveats.
     throw new ApiError(
       501,
