@@ -22,7 +22,7 @@ export class OAuthController {
   start = async (req, res) => {
     const result = await this.oauthService.start(req.params.provider, {
       mode: req.query.mode,
-      clientType: req.query.clientType,
+      platform: req.query.platform,
       currentUserId: req.auth?.userId || null,
     });
     return ok(res, result);
@@ -51,7 +51,7 @@ export class OAuthController {
   link = async (req, res) => {
     const result = await this.oauthService.start(req.params.provider, {
       mode: 'link',
-      clientType: req.body?.clientType || 'confidential',
+      platform: req.body?.platform || 'web',
       currentUserId: req.auth.userId,
     });
     return ok(res, result);
