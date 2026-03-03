@@ -4,10 +4,20 @@ import { ERROR_CODES } from '../constants/errors.js';
 import { ROLES } from '../constants/roles.js';
 
 export class OAuthService {
-  constructor({ env, redisClient, oauthProviderFactory, oauthAccountRepository, userRepository, tokenService, auditService }) {
+  constructor({
+    env,
+    redisClient,
+    oauthProviderFactory,
+    oauthClientConfigResolver,
+    oauthAccountRepository,
+    userRepository,
+    tokenService,
+    auditService,
+  }) {
     this.env = env;
     this.redis = redisClient;
     this.oauthProviderFactory = oauthProviderFactory;
+    this.oauthClientConfigResolver = oauthClientConfigResolver;
     this.oauthAccountRepository = oauthAccountRepository;
     this.userRepository = userRepository;
     this.tokenService = tokenService;
@@ -22,19 +32,21 @@ export class OAuthService {
     return crypto.createHash('sha256').update(verifier).digest('base64url');
   }
 
-  async start(providerName, { mode, clientType, currentUserId }) {
+  async start(providerName, { mode, platform, currentUserId }) {
     const provider = this.oauthProviderFactory.getProvider(providerName);
+    const clientConfig = this.oauthClientConfigResolver.resolve(providerName, platform);
     const state = crypto.randomBytes(24).toString('base64url');
 
     const statePayload = {
       provider: providerName,
+      platform: clientConfig.platform,
       mode,
       currentUserId: currentUserId || null,
     };
 
     let codeVerifier = null;
     let codeChallenge = null;
-    if (clientType === 'public') {
+    if (clientConfig.clientType === 'public') {
       codeVerifier = this.buildPkceVerifier();
       codeChallenge = this.buildCodeChallenge(codeVerifier);
       statePayload.codeVerifier = codeVerifier;
@@ -45,10 +57,16 @@ export class OAuthService {
     });
 
     return {
-      authorizationUrl: provider.getAuthorizationUrl(state, codeChallenge),
+      authorizationUrl: provider.getAuthorizationUrl({
+        state,
+        codeChallenge,
+        clientConfig,
+      }),
       state,
       mode,
-      pkceRequired: clientType === 'public',
+      platform: clientConfig.platform,
+      clientType: clientConfig.clientType,
+      pkceRequired: clientConfig.clientType === 'public',
     };
   }
 
@@ -66,12 +84,22 @@ export class OAuthService {
     }
 
     const provider = this.oauthProviderFactory.getProvider(providerName);
+    const clientConfig = this.oauthClientConfigResolver.resolve(providerName, stateData.platform);
 
     let profile;
     try {
-      profile = await provider.exchangeCodeForProfile(code, stateData.codeVerifier);
+      profile = await provider.exchangeCodeForProfile({
+        code,
+        codeVerifier: stateData.codeVerifier,
+        clientConfig,
+      });
     } catch (error) {
-      this.auditService.log('oauth.exchange_failed', { provider: providerName, ipAddress: context.ipAddress, reason: error.message });
+      this.auditService.log('oauth.exchange_failed', {
+        provider: providerName,
+        platform: stateData.platform,
+        ipAddress: context.ipAddress,
+        reason: error.message,
+      });
       throw new ApiError(401, ERROR_CODES.OAUTH_PROVIDER_ERROR, 'OAuth authentication failed');
     }
 
@@ -143,6 +171,7 @@ export class OAuthService {
         roles: [ROLES.USER],
         tenantId: null,
         isEmailVerified: Boolean(profile.emailVerified),
+        emailVerifiedAt: profile.emailVerified ? new Date() : null,
         status: 'active',
       });
     }
