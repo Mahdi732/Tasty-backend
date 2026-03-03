@@ -14,5 +14,5 @@ export const errorMiddleware = (logger) => (err, req, res, _next) => {
     message,
     requestId: req.requestId,
     details: err instanceof ApiError ? err.details : undefined,
-  });
+  }, err instanceof ApiError ? err.meta : undefined);
 };
