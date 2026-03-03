@@ -1,6 +1,5 @@
 import { GoogleOAuthProvider } from './providers/google.provider.js';
 import { FacebookOAuthProvider } from './providers/facebook.provider.js';
-import { AppleOAuthProvider } from './providers/apple.provider.js';
 import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 
@@ -9,7 +8,6 @@ export class OAuthProviderFactory {
     this.providers = new Map([
       ['google', new GoogleOAuthProvider()],
       ['facebook', new FacebookOAuthProvider()],
-      ['apple', new AppleOAuthProvider()],
     ]);
   }
 
