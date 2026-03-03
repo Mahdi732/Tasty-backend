@@ -14,9 +14,11 @@ import {
 import { UserModel } from './models/user.model.js';
 import { RefreshSessionModel } from './models/refresh-session.model.js';
 import { OAuthAccountModel } from './models/oauth-account.model.js';
+import { EmailVerificationModel } from './models/email-verification.model.js';
 import { UserRepository } from './repositories/user.repository.js';
 import { SessionRepository } from './repositories/session.repository.js';
 import { OAuthAccountRepository } from './repositories/oauth-account.repository.js';
+import { EmailVerificationRepository } from './repositories/email-verification.repository.js';
 import { PasswordHasher } from './security/password.hasher.js';
 import { TokenGenerator } from './security/token.generator.js';
 import { JwtSigner } from './security/jwt.signer.js';
@@ -27,7 +29,11 @@ import { TokenService } from './services/token.service.js';
 import { SessionService } from './services/session.service.js';
 import { AuthService } from './services/auth.service.js';
 import { UserService } from './services/user.service.js';
+import { EmailVerificationService } from './services/email-verification.service.js';
+import { NodemailerEmailSender } from './services/email/nodemailer-email.sender.js';
+import { NoopEmailSender } from './services/email/noop-email.sender.js';
 import { OAuthProviderFactory } from './oauth/oauth-provider.factory.js';
+import { OAuthClientConfigResolver } from './oauth/oauth-client-config.resolver.js';
 import { OAuthService } from './services/oauth.service.js';
 import { HealthController } from './controllers/health.controller.js';
 import { AuthController } from './controllers/auth.controller.js';
@@ -43,7 +49,7 @@ import { buildRoutes } from './routes/index.js';
 import { getClientIp } from './utils/ip.js';
 import { getUserAgent } from './utils/user-agent.js';
 
-export const buildApp = async ({ redisClient }) => {
+export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
   const app = express();
 
   const keyService = new KeyService(env);
@@ -66,6 +72,7 @@ export const buildApp = async ({ redisClient }) => {
   const userRepository = new UserRepository(UserModel);
   const sessionRepository = new SessionRepository(RefreshSessionModel);
   const oauthAccountRepository = new OAuthAccountRepository(OAuthAccountModel);
+  const emailVerificationRepository = new EmailVerificationRepository(EmailVerificationModel);
 
   const passwordHasher = new PasswordHasher();
   const tokenGenerator = new TokenGenerator();
@@ -82,21 +89,37 @@ export const buildApp = async ({ redisClient }) => {
 
   const sessionService = new SessionService(sessionRepository);
 
+  const resolvedEmailSender =
+    emailSender || (env.SMTP_ENABLED ? new NodemailerEmailSender({ env, logger }) : new NoopEmailSender());
+
+  const emailVerificationService = new EmailVerificationService({
+    env,
+    redisClient,
+    userRepository,
+    emailVerificationRepository,
+    emailSender: resolvedEmailSender,
+    auditService,
+    otpGenerator,
+  });
+
   const authService = new AuthService({
     userRepository,
     passwordHasher,
     tokenService,
     sessionService,
     auditService,
+    emailVerificationService,
   });
 
   const userService = new UserService(userRepository);
 
-  const oauthProviderFactory = new OAuthProviderFactory(env);
+  const oauthProviderFactory = new OAuthProviderFactory();
+  const oauthClientConfigResolver = new OAuthClientConfigResolver(env);
   const oauthService = new OAuthService({
     env,
     redisClient,
     oauthProviderFactory,
+    oauthClientConfigResolver,
     oauthAccountRepository,
     userRepository,
     tokenService,
@@ -128,6 +151,12 @@ export const buildApp = async ({ redisClient }) => {
     keyGenerator: (req) => `${getClientIp(req)}:refresh`,
   });
 
+  const emailVerificationLimiter = createRateLimiter(redisClient, {
+    windowMs: env.EMAIL_VERIFICATION_SEND_WINDOW_SECONDS * 1000,
+    max: env.EMAIL_VERIFICATION_SEND_MAX_PER_WINDOW,
+    keyGenerator: (req) => `${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
+  });
+
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(requestIdMiddleware);
   app.use(httpLogger);
@@ -154,6 +183,7 @@ export const buildApp = async ({ redisClient }) => {
       authMiddleware,
       loginLimiter,
       refreshLimiter,
+      emailVerificationLimiter,
     })
   );
 
