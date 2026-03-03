@@ -142,7 +142,7 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
   const loginLimiter = createRateLimiter(redisClient, {
     windowMs: env.RATE_LIMIT_WINDOW_MS,
     max: env.LOGIN_RATE_LIMIT_MAX,
-    keyGenerator: (req) => `${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
+    keyGenerator: (req) => `login:${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
   });
 
   const refreshLimiter = createRateLimiter(redisClient, {
@@ -154,7 +154,7 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
   const emailVerificationLimiter = createRateLimiter(redisClient, {
     windowMs: env.EMAIL_VERIFICATION_SEND_WINDOW_SECONDS * 1000,
     max: env.EMAIL_VERIFICATION_SEND_MAX_PER_WINDOW,
-    keyGenerator: (req) => `${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
+    keyGenerator: (req) => `email-verification:${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
   });
 
   app.set('trust proxy', env.TRUST_PROXY);
