@@ -17,6 +17,26 @@ const DEFAULT_CLIENT_TYPE_BY_PLATFORM = {
 
 const trimEnv = (envMap, key) => (envMap[key] || '').trim();
 
+const parseBooleanFromEnv = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'no', 'off', ''].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return value;
+};
+
+const envBoolean = () => z.preprocess(parseBooleanFromEnv, z.boolean());
+
 const parsePlatformClientConfig = (envMap, providerName, platform, warnings) => {
   const providerUpper = providerName.toUpperCase();
   const platformUpper = platform.toUpperCase();
@@ -152,7 +172,7 @@ const envSchema = z.object({
 
   REFRESH_TOKEN_TRANSPORT: z.enum(['cookie', 'body', 'both']).default('both'),
   REFRESH_COOKIE_NAME: z.string().default('rt'),
-  COOKIE_SECURE: z.coerce.boolean().default(true),
+  COOKIE_SECURE: envBoolean().default(true),
   COOKIE_DOMAIN: z.string().optional().default(''),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
 
@@ -170,9 +190,9 @@ const envSchema = z.object({
   FACEBOOK_REDIRECT_URI: z.string().optional().default(''),
 
   OAUTH_STATE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
-  ALLOW_AUTO_LINK_VERIFIED_OAUTH_EMAIL: z.coerce.boolean().default(false),
+  ALLOW_AUTO_LINK_VERIFIED_OAUTH_EMAIL: envBoolean().default(false),
 
-  EMAIL_VERIFICATION_ENABLED: z.coerce.boolean().default(true),
+  EMAIL_VERIFICATION_ENABLED: envBoolean().default(true),
   EMAIL_VERIFICATION_CODE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(60),
   EMAIL_VERIFICATION_MAX_VERIFY_ATTEMPTS: z.coerce.number().int().positive().default(5),
@@ -181,10 +201,10 @@ const envSchema = z.object({
   EMAIL_VERIFICATION_EMAIL_MAX_PER_WINDOW: z.coerce.number().int().positive().default(5),
   EMAIL_VERIFICATION_HASH_SECRET: z.string().optional().default(''),
 
-  SMTP_ENABLED: z.coerce.boolean().default(false),
+  SMTP_ENABLED: envBoolean().default(false),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_SECURE: envBoolean().default(false),
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().email().optional().default('noreply@tasty.local'),
