@@ -46,7 +46,9 @@ export class AuthController {
       deviceId: req.body.deviceId,
     };
     const result = await this.authService.register(req.body, context);
-    attachRefreshToken(res, this.env, result.refreshToken);
+    if (result.refreshToken) {
+      attachRefreshToken(res, this.env, result.refreshToken);
+    }
     return ok(res, refreshTransportPayload(this.env, result), 201);
   };
 
@@ -104,5 +106,28 @@ export class AuthController {
   me = async (req, res) => {
     const profile = await this.userService.getProfile(req.auth.userId);
     return ok(res, profile);
+  };
+
+  startEmailVerification = async (req, res) => {
+    const context = {
+      ipAddress: req.clientIp,
+      userAgent: req.userAgent,
+    };
+    const result = await this.authService.startEmailVerification(req.body, context);
+    return ok(res, result);
+  };
+
+  verifyEmail = async (req, res) => {
+    const context = {
+      ipAddress: req.clientIp,
+      userAgent: req.userAgent,
+    };
+    const result = await this.authService.verifyEmail(req.body, context);
+    return ok(res, result);
+  };
+
+  requestEmailChange = async (_req, res) => {
+    const result = await this.authService.requestEmailChange();
+    return ok(res, result, 501);
   };
 }
