@@ -4,12 +4,13 @@ import { assertStrongPassword } from '../security/password.policy.js';
 import { ROLES } from '../constants/roles.js';
 
 export class AuthService {
-  constructor({ userRepository, passwordHasher, tokenService, sessionService, auditService }) {
+  constructor({ userRepository, passwordHasher, tokenService, sessionService, auditService, emailVerificationService }) {
     this.userRepository = userRepository;
     this.passwordHasher = passwordHasher;
     this.tokenService = tokenService;
     this.sessionService = sessionService;
     this.auditService = auditService;
+    this.emailVerificationService = emailVerificationService;
   }
 
   async register(payload, context) {
@@ -27,15 +28,19 @@ export class AuthService {
       roles: [ROLES.USER],
       tenantId: payload.tenantId || null,
       isEmailVerified: false,
-      status: 'active',
+      emailVerifiedAt: null,
+      status: 'pending_email_verification',
     });
 
-    const tokens = await this.tokenService.issueTokensForUser(user, context);
+    if (this.emailVerificationService && this.emailVerificationService.env.EMAIL_VERIFICATION_ENABLED) {
+      await this.emailVerificationService.startVerification(user.email, context);
+    }
+
     this.auditService.log('auth.register_success', { userId: user.id, email: user.email, ipAddress: context.ipAddress });
 
     return {
       user: { id: user.id, email: user.email, roles: user.roles, tenantId: user.tenantId },
-      ...tokens,
+      verificationRequired: !user.isEmailVerified,
     };
   }
 
@@ -60,6 +65,16 @@ export class AuthService {
       await this.userRepository.save(user);
       this.auditService.log('auth.login_failed', { userId: user.id, email: user.email, reason: 'invalid_credentials', ipAddress: context.ipAddress });
       throw new ApiError(401, ERROR_CODES.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
+    }
+
+    if (user.status === 'pending_email_verification' || !user.isEmailVerified) {
+      throw new ApiError(
+        403,
+        ERROR_CODES.EMAIL_NOT_VERIFIED,
+        'Verify your email',
+        undefined,
+        { verificationRequired: true }
+      );
     }
 
     if (user.status !== 'active') {
@@ -122,5 +137,23 @@ export class AuthService {
     const result = await this.sessionService.revokeAll(userId, exceptCurrentSession);
     this.auditService.log('auth.logout_all', { userId, exceptCurrentSession });
     return result;
+  }
+
+  async startEmailVerification(payload, context) {
+    if (!this.emailVerificationService?.env.EMAIL_VERIFICATION_ENABLED) {
+      return { sent: true };
+    }
+    return this.emailVerificationService.startVerification(payload.email, context);
+  }
+
+  async verifyEmail(payload, context) {
+    if (!this.emailVerificationService?.env.EMAIL_VERIFICATION_ENABLED) {
+      return { verified: true };
+    }
+    return this.emailVerificationService.verifyCode(payload.email, payload.code, context);
+  }
+
+  async requestEmailChange() {
+    return { scaffolded: true };
   }
 }
