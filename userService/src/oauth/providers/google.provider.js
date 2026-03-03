@@ -2,21 +2,14 @@ import axios from 'axios';
 import { OAuthProvider } from '../oauth-provider.interface.js';
 
 export class GoogleOAuthProvider extends OAuthProvider {
-  constructor(env) {
-    super();
-    this.clientId = env.GOOGLE_CLIENT_ID;
-    this.clientSecret = env.GOOGLE_CLIENT_SECRET;
-    this.redirectUri = env.GOOGLE_REDIRECT_URI;
-  }
-
   getName() {
     return 'google';
   }
 
-  getAuthorizationUrl(state, codeChallenge) {
+  getAuthorizationUrl({ state, codeChallenge, clientConfig }) {
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    url.searchParams.set('client_id', this.clientId);
-    url.searchParams.set('redirect_uri', this.redirectUri);
+    url.searchParams.set('client_id', clientConfig.clientId);
+    url.searchParams.set('redirect_uri', clientConfig.redirectUri);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'openid email profile');
     url.searchParams.set('state', state);
@@ -27,17 +20,26 @@ export class GoogleOAuthProvider extends OAuthProvider {
     return url.toString();
   }
 
-  async exchangeCodeForProfile(code, codeVerifier) {
+  async exchangeCodeForProfile({ code, codeVerifier, clientConfig }) {
+    const payload = new URLSearchParams({
+      client_id: clientConfig.clientId,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: clientConfig.redirectUri,
+    });
+
+    // Security: public clients must not be forced to use a client secret.
+    if (clientConfig.clientSecret) {
+      payload.set('client_secret', clientConfig.clientSecret);
+    }
+
+    if (codeVerifier) {
+      payload.set('code_verifier', codeVerifier);
+    }
+
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',
-      new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: this.redirectUri,
-        code_verifier: codeVerifier || '',
-      }),
+      payload,
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
