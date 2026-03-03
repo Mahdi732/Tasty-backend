@@ -26,3 +26,16 @@ export const logoutSchema = z.object({
 export const logoutAllSchema = z.object({
   exceptCurrentSession: z.boolean().optional().default(false),
 });
+
+export const startEmailVerificationSchema = z.object({
+  email: emailSchema,
+});
+
+export const verifyEmailSchema = z.object({
+  email: emailSchema,
+  code: z.string().trim().regex(/^\d{6}$/),
+});
+
+export const requestEmailChangeSchema = z.object({
+  newEmail: emailSchema,
+});
