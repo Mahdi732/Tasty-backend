@@ -2,34 +2,32 @@ import axios from 'axios';
 import { OAuthProvider } from '../oauth-provider.interface.js';
 
 export class FacebookOAuthProvider extends OAuthProvider {
-  constructor(env) {
-    super();
-    this.clientId = env.FACEBOOK_CLIENT_ID;
-    this.clientSecret = env.FACEBOOK_CLIENT_SECRET;
-    this.redirectUri = env.FACEBOOK_REDIRECT_URI;
-  }
-
   getName() {
     return 'facebook';
   }
 
-  getAuthorizationUrl(state) {
+  getAuthorizationUrl({ state, clientConfig }) {
     const url = new URL('https://www.facebook.com/v19.0/dialog/oauth');
-    url.searchParams.set('client_id', this.clientId);
-    url.searchParams.set('redirect_uri', this.redirectUri);
+    url.searchParams.set('client_id', clientConfig.clientId);
+    url.searchParams.set('redirect_uri', clientConfig.redirectUri);
     url.searchParams.set('state', state);
     url.searchParams.set('scope', 'email,public_profile');
     return url.toString();
   }
 
-  async exchangeCodeForProfile(code) {
+  async exchangeCodeForProfile({ code, clientConfig }) {
+    const tokenParams = {
+      client_id: clientConfig.clientId,
+      redirect_uri: clientConfig.redirectUri,
+      code,
+    };
+
+    if (clientConfig.clientSecret) {
+      tokenParams.client_secret = clientConfig.clientSecret;
+    }
+
     const tokenResponse = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
-      params: {
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        redirect_uri: this.redirectUri,
-        code,
-      },
+      params: tokenParams,
     });
 
     const accessToken = tokenResponse.data.access_token;
