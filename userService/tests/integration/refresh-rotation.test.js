@@ -19,7 +19,18 @@ describe('Refresh rotation', () => {
   });
 
   it('rotates refresh token and rejects reused old token', async () => {
-    const reg = await ctx.request.post('/auth/register').send({
+    await ctx.request.post('/auth/register').send({
+      email: 'user2@example.com',
+      password: 'StrongPass!123',
+    });
+
+    const otp = ctx.emailSender.latestOtpFor('user2@example.com');
+    await ctx.request.post('/auth/email/verify').send({
+      email: 'user2@example.com',
+      code: otp,
+    });
+
+    const reg = await ctx.request.post('/auth/login').send({
       email: 'user2@example.com',
       password: 'StrongPass!123',
     });
