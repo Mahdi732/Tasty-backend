@@ -26,7 +26,25 @@ describe('Auth routes', () => {
 
     expect(registerRes.status).toBe(201);
     expect(registerRes.body.success).toBe(true);
-    expect(registerRes.body.data.accessToken).toBeTruthy();
+    expect(registerRes.body.data.verificationRequired).toBe(true);
+
+    const preVerifyLogin = await ctx.request.post('/auth/login').send({
+      email: 'user1@example.com',
+      password: 'StrongPass!123',
+    });
+
+    expect(preVerifyLogin.status).toBe(403);
+    expect(preVerifyLogin.body.error.code).toBe('EMAIL_NOT_VERIFIED');
+    expect(preVerifyLogin.body.meta.verificationRequired).toBe(true);
+
+    const otp = ctx.emailSender.latestOtpFor('user1@example.com');
+    const verifyRes = await ctx.request.post('/auth/email/verify').send({
+      email: 'user1@example.com',
+      code: otp,
+    });
+
+    expect(verifyRes.status).toBe(200);
+    expect(verifyRes.body.data.verified).toBe(true);
 
     const loginRes = await ctx.request.post('/auth/login').send({
       email: 'user1@example.com',
