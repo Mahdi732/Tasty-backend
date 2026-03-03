@@ -8,5 +8,4 @@ export const REFRESH_TOKEN_TRANSPORT_MODES = Object.freeze({
 export const OAUTH_PROVIDERS = Object.freeze({
   GOOGLE: 'google',
   FACEBOOK: 'facebook',
-  APPLE: 'apple',
 });
