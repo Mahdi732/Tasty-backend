@@ -11,7 +11,7 @@ import { authMiddleware as authMiddlewareFactory } from './middlewares/auth.midd
 import { JwtVerifier } from './security/jwt.verifier.js';
 
 import { RestaurantModel } from './models/restaurant.model.js';
-import { RestaurantManagerModel } from './models/restaurant-manager.model.js';
+import { RestaurantUserModel } from './models/restaurant-user.model.js';
 import { MenuCategoryModel } from './models/menu-category.model.js';
 import { MenuItemModel } from './models/menu-item.model.js';
 import { OptionGroupModel } from './models/option-group.model.js';
@@ -19,7 +19,7 @@ import { OptionItemModel } from './models/option-item.model.js';
 import { PublicMenuProjectionModel } from './models/public-menu-projection.model.js';
 
 import { RestaurantRepository } from './repositories/restaurant.repository.js';
-import { RestaurantManagerRepository } from './repositories/restaurant-manager.repository.js';
+import { RestaurantUserRepository } from './repositories/restaurant-user.repository.js';
 import { MenuCategoryRepository } from './repositories/menu-category.repository.js';
 import { MenuItemRepository } from './repositories/menu-item.repository.js';
 import { OptionGroupRepository } from './repositories/option-group.repository.js';
@@ -43,7 +43,7 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
   const app = express();
 
   const restaurantRepository = new RestaurantRepository(RestaurantModel);
-  const restaurantManagerRepository = new RestaurantManagerRepository(RestaurantManagerModel);
+  const restaurantUserRepository = new RestaurantUserRepository(RestaurantUserModel);
   const categoryRepository = new MenuCategoryRepository(MenuCategoryModel);
   const itemRepository = new MenuItemRepository(MenuItemModel);
   const optionGroupRepository = new OptionGroupRepository(OptionGroupModel);
@@ -67,7 +67,7 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
 
   const restaurantService = new RestaurantService({
     restaurantRepository,
-    restaurantManagerRepository,
+    restaurantUserRepository,
     activationGateService,
     projectionService,
     defaultCurrency: env.DEFAULT_RESTAURANT_CURRENCY,
@@ -75,7 +75,7 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
 
   const menuService = new MenuService({
     restaurantRepository,
-    restaurantManagerRepository,
+    restaurantUserRepository,
     categoryRepository,
     itemRepository,
     optionGroupRepository,
