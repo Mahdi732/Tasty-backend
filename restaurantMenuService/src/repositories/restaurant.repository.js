@@ -3,6 +3,24 @@ export class RestaurantRepository {
     this.model = model;
   }
 
+  buildPublicFilter({ citySlug, query }) {
+    const filter = {
+      status: 'ACTIVE',
+      visibility: 'PUBLIC',
+      'subscription.status': 'ACTIVE',
+      'verification.status': 'VERIFIED',
+      deletedAt: null,
+    };
+    if (citySlug) filter['location.citySlug'] = citySlug;
+    if (query) {
+      filter.$or = [
+        { name: new RegExp(query, 'i') },
+        { description: new RegExp(query, 'i') },
+      ];
+    }
+    return filter;
+  }
+
   create(payload) {
     return this.model.create(payload);
   }
@@ -20,14 +38,7 @@ export class RestaurantRepository {
   }
 
   listPublic({ page, limit, citySlug, query }) {
-    const filter = { status: 'ACTIVE', deletedAt: null };
-    if (citySlug) filter['location.citySlug'] = citySlug;
-    if (query) {
-      filter.$or = [
-        { name: new RegExp(query, 'i') },
-        { description: new RegExp(query, 'i') },
-      ];
-    }
+    const filter = this.buildPublicFilter({ citySlug, query });
 
     return this.model
       .find(filter)
@@ -38,15 +49,18 @@ export class RestaurantRepository {
   }
 
   countPublic({ citySlug, query }) {
-    const filter = { status: 'ACTIVE', deletedAt: null };
-    if (citySlug) filter['location.citySlug'] = citySlug;
-    if (query) {
-      filter.$or = [
-        { name: new RegExp(query, 'i') },
-        { description: new RegExp(query, 'i') },
-      ];
-    }
+    const filter = this.buildPublicFilter({ citySlug, query });
     return this.model.countDocuments(filter);
+  }
+
+  existsDraftUnpaidByIds(ids) {
+    if (!ids?.length) return Promise.resolve(false);
+    return this.model.exists({
+      _id: { $in: ids },
+      status: 'DRAFT',
+      'subscription.status': { $ne: 'ACTIVE' },
+      deletedAt: null,
+    });
   }
 
   updateById(id, payload) {
