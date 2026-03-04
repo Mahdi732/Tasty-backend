@@ -16,7 +16,6 @@ export const authMiddleware = (jwtVerifier) => async (req, _res, next) => {
     req.auth = {
       userId: payload.sub,
       roles,
-      tenantId: payload.tenantId || null,
       sessionId: payload.sid || null,
     };
     next();
