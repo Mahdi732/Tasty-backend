@@ -69,8 +69,7 @@ export class TokenService {
 
     const accessToken = await this.jwtSigner.signAccessToken({
       sub: user.id,
-      role: user.roles,
-      tenantId: user.tenantId,
+      roles: user.roles,
       sid: sessionId,
       jti: uuidv4(),
       typ: 'access',
