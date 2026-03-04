@@ -1,0 +1,30 @@
+services:
+  order-service:
+    build: .
+    container_name: tasty-order-service
+    ports:
+      - "4020:4020"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - rabbitmq
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: tasty-order-mongo
+    ports:
+      - "27020:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: tasty-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  mongo-data:
