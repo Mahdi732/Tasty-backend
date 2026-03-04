@@ -24,4 +24,9 @@ export class RestaurantController {
     const restaurant = await this.restaurantService.getManagerRestaurant(req.params.id, req.auth);
     return ok(res, restaurant);
   };
+
+  addStaff = async (req, res) => {
+    const mapping = await this.restaurantService.addStaffMember(req.params.id, req.auth, req.body);
+    return ok(res, mapping, 201);
+  };
 }
