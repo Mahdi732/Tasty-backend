@@ -8,11 +8,15 @@ export const RESTAURANT_STATUS = Object.freeze({
 });
 
 export const SUBSCRIPTION_STATUS = Object.freeze({
-  NONE: 'NONE',
-  TRIAL: 'TRIAL',
+  PENDING: 'PENDING',
   ACTIVE: 'ACTIVE',
   PAST_DUE: 'PAST_DUE',
   CANCELED: 'CANCELED',
+});
+
+export const RESTAURANT_VISIBILITY = Object.freeze({
+  HIDDEN: 'HIDDEN',
+  PUBLIC: 'PUBLIC',
 });
 
 export const VERIFICATION_STATUS = Object.freeze({
