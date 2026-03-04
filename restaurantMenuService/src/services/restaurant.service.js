@@ -7,13 +7,13 @@ import { toSlug } from '../utils/slug.js';
 export class RestaurantService {
   constructor({
     restaurantRepository,
-    restaurantManagerRepository,
+    restaurantUserRepository,
     activationGateService,
     projectionService,
     defaultCurrency,
   }) {
     this.restaurantRepository = restaurantRepository;
-    this.restaurantManagerRepository = restaurantManagerRepository;
+    this.restaurantUserRepository = restaurantUserRepository;
     this.activationGateService = activationGateService;
     this.projectionService = projectionService;
     this.defaultCurrency = defaultCurrency;
@@ -22,7 +22,7 @@ export class RestaurantService {
   async ensureManageAccess(restaurantId, auth) {
     if (auth.roles.includes(ROLES.SUPERADMIN)) return;
 
-    const owns = await this.restaurantManagerRepository.isManagerOfRestaurant(restaurantId, auth.userId);
+    const owns = await this.restaurantUserRepository.hasRestaurantAccess(restaurantId, auth.userId);
     if (!owns) {
       throw new ApiError(403, ERROR_CODES.TENANT_ACCESS_DENIED, 'Access denied for this restaurant');
     }
@@ -49,9 +49,9 @@ export class RestaurantService {
       updatedBy: auth.userId,
     });
 
-    await this.restaurantManagerRepository.create({
+    await this.restaurantUserRepository.create({
       restaurantId: restaurant._id,
-      managerUserId: auth.userId,
+      userId: auth.userId,
       role: 'OWNER',
     });
 
