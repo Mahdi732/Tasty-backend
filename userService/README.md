@@ -45,3 +45,32 @@ Production-grade Auth Service (Node.js + Express + MongoDB + Redis) for microser
 ## Postman testing
 
 - See `POSTMAN_TESTING.md` for a complete request-by-request Postman workflow aligned with the current API.
+
+## Architecture conclusion (Auth Service)
+
+This service is now a pure Identity Provider for the marketplace architecture.
+
+- It owns identity only: user credentials, verification state, account status, sessions, and JWT issuance.
+- It is tenant-agnostic: there is no `tenantId` in the user schema, indexes, auth flows, or JWT payload.
+- It issues RS256 access tokens with global claims for downstream authorization:
+   - `sub` (userId)
+   - `roles` (global roles)
+   - `sid` / `jti` (+ standard `iat` / `exp`)
+
+### Roles handled here
+
+- `user`: default global role for customer identity.
+- `manager`: global capability to access protected manager APIs in downstream services.
+- `superadmin`: global admin role with bypass behavior in downstream services.
+
+Auth Service does not decide restaurant ownership. It only asserts identity + global roles in JWT.
+
+### Test alignment
+
+- `tests/integration/auth.routes.test.js`
+   - Validates register → verify → login → me flow.
+   - Asserts access token includes `roles` and does not include `tenantId`.
+- `tests/integration/refresh-rotation.test.js`
+   - Validates refresh rotation and reuse detection behavior.
+- `tests/integration/protected-route.test.js`
+   - Validates JWT protection for authenticated routes.
