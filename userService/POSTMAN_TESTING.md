@@ -61,8 +61,7 @@ Request:
 
 {
   "email": "{{email}}",
-  "password": "{{password}}",
-  "tenantId": "restaurant-001"
+  "password": "{{password}}"
 }
 
 Tests tab script:
