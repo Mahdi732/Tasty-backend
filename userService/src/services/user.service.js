@@ -15,7 +15,6 @@ export class UserService {
       id: user.id,
       email: user.email,
       roles: user.roles,
-      tenantId: user.tenantId,
       status: user.status,
       isEmailVerified: user.isEmailVerified,
       lastLoginAt: user.lastLoginAt,
