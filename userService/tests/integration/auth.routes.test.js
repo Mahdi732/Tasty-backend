@@ -1,4 +1,5 @@
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from '@jest/globals';
+import { decodeJwt } from 'jose';
 import { startMongoMemory, stopMongoMemory, clearMongoMemory } from '../helpers/mongo-memory.js';
 import { createTestContext } from '../helpers/test-app.js';
 
@@ -53,6 +54,12 @@ describe('Auth routes', () => {
 
     expect(loginRes.status).toBe(200);
     const accessToken = loginRes.body.data.accessToken;
+    const claims = decodeJwt(accessToken);
+
+    expect(claims.sub).toBeTruthy();
+    expect(Array.isArray(claims.roles)).toBe(true);
+    expect(claims.roles).toContain('user');
+    expect(claims.tenantId).toBeUndefined();
 
     const meRes = await ctx.request
       .get('/auth/me')
