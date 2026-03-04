@@ -143,7 +143,7 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
     windowMs: env.RATE_LIMIT_WINDOW_MS,
     max: env.LOGIN_RATE_LIMIT_MAX,
     keyGenerator: (req) => `login:${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
-  });
+  });code
 
   const refreshLimiter = createRateLimiter(redisClient, {
     windowMs: env.RATE_LIMIT_WINDOW_MS,
