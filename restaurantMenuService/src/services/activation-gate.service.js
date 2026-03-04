@@ -13,7 +13,7 @@ export class ActivationGateService {
   evaluate(restaurant) {
     const blockers = [];
 
-    if (![SUBSCRIPTION_STATUS.TRIAL, SUBSCRIPTION_STATUS.ACTIVE].includes(restaurant.subscription.status)) {
+    if (restaurant.subscription.status !== SUBSCRIPTION_STATUS.ACTIVE) {
       blockers.push(ACTIVATION_BLOCKERS.SUBSCRIPTION_INACTIVE);
     }
 
