@@ -5,7 +5,7 @@ import { ROLES } from '../constants/roles.js';
 export class MenuService {
   constructor({
     restaurantRepository,
-    restaurantManagerRepository,
+    restaurantUserRepository,
     categoryRepository,
     itemRepository,
     optionGroupRepository,
@@ -13,7 +13,7 @@ export class MenuService {
     projectionService,
   }) {
     this.restaurantRepository = restaurantRepository;
-    this.restaurantManagerRepository = restaurantManagerRepository;
+    this.restaurantUserRepository = restaurantUserRepository;
     this.categoryRepository = categoryRepository;
     this.itemRepository = itemRepository;
     this.optionGroupRepository = optionGroupRepository;
@@ -23,7 +23,7 @@ export class MenuService {
 
   async ensureManageAccess(restaurantId, auth) {
     if (auth.roles.includes(ROLES.SUPERADMIN)) return;
-    const owns = await this.restaurantManagerRepository.isManagerOfRestaurant(restaurantId, auth.userId);
+    const owns = await this.restaurantUserRepository.hasRestaurantAccess(restaurantId, auth.userId);
     if (!owns) {
       throw new ApiError(403, ERROR_CODES.TENANT_ACCESS_DENIED, 'Access denied for this restaurant');
     }
