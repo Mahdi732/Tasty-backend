@@ -24,6 +24,7 @@ describe('Public read returns ACTIVE restaurants only', () => {
         slug: 'active-r',
         location: { city: 'Casablanca', citySlug: 'casablanca' },
         status: 'ACTIVE',
+        visibility: 'PUBLIC',
         subscription: { status: 'ACTIVE' },
         verification: { status: 'VERIFIED' },
         createdBy: 'u1',
