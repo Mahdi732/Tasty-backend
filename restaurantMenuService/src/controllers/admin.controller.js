@@ -47,10 +47,11 @@ export class AdminController {
   };
 
   setSubscription = async (req, res) => {
+    const normalizedPlanId = req.body.subscriptionPlanId ?? req.body.planId;
     const payload = {
       ...req.body,
+      ...(normalizedPlanId !== undefined ? { subscriptionPlanId: normalizedPlanId } : {}),
       currentPeriodEnd: req.body.currentPeriodEnd ? new Date(req.body.currentPeriodEnd) : undefined,
-      trialEndsAt: req.body.trialEndsAt ? new Date(req.body.trialEndsAt) : undefined,
     };
     const restaurant = await this.restaurantService.updateSubscription(req.params.id, req.auth, payload);
     return ok(res, restaurant);
