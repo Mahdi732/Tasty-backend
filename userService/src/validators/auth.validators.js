@@ -5,7 +5,6 @@ const emailSchema = z.string().trim().toLowerCase().email().max(254);
 export const registerSchema = z.object({
   email: emailSchema,
   password: z.string().min(12).max(128),
-  tenantId: z.string().trim().max(128).optional(),
 });
 
 export const loginSchema = z.object({
