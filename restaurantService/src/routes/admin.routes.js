@@ -12,14 +12,13 @@ import {
 
 export const buildAdminRoutes = (adminController) => {
   const router = Router();
-  router.use(requireRole(ROLES.SUPERADMIN));
 
-  router.patch('/restaurants/:id/verify', validate(restaurantIdParamSchema, 'params'), validate(reviewSchema), asyncHandler(adminController.verify));
-  router.patch('/restaurants/:id/unverify', validate(restaurantIdParamSchema, 'params'), validate(reviewSchema), asyncHandler(adminController.unverify));
-  router.patch('/restaurants/:id/reject', validate(restaurantIdParamSchema, 'params'), validate(reviewSchema), asyncHandler(adminController.rejectVerification));
-  router.patch('/restaurants/:id/suspend', validate(restaurantIdParamSchema, 'params'), validate(suspendRestaurantSchema), asyncHandler(adminController.suspend));
-  router.patch('/restaurants/:id/unsuspend', validate(restaurantIdParamSchema, 'params'), asyncHandler(adminController.unsuspend));
-  router.patch('/restaurants/:id/subscription', validate(restaurantIdParamSchema, 'params'), validate(subscriptionUpdateSchema), asyncHandler(adminController.setSubscription));
+  router.patch('/restaurants/:id/verify', requireRole(ROLES.SUPERADMIN), validate(restaurantIdParamSchema, 'params'), validate(reviewSchema), asyncHandler(adminController.verify));
+  router.patch('/restaurants/:id/unverify', requireRole(ROLES.SUPERADMIN), validate(restaurantIdParamSchema, 'params'), validate(reviewSchema), asyncHandler(adminController.unverify));
+  router.patch('/restaurants/:id/reject', requireRole(ROLES.SUPERADMIN), validate(restaurantIdParamSchema, 'params'), validate(reviewSchema), asyncHandler(adminController.rejectVerification));
+  router.patch('/restaurants/:id/suspend', requireRole(ROLES.SUPERADMIN), validate(restaurantIdParamSchema, 'params'), validate(suspendRestaurantSchema), asyncHandler(adminController.suspend));
+  router.patch('/restaurants/:id/unsuspend', requireRole(ROLES.SUPERADMIN), validate(restaurantIdParamSchema, 'params'), asyncHandler(adminController.unsuspend));
+  router.patch('/restaurants/:id/subscription', requireRole(ROLES.SUPERADMIN), validate(restaurantIdParamSchema, 'params'), validate(subscriptionUpdateSchema), asyncHandler(adminController.setSubscription));
 
   return router;
 };
