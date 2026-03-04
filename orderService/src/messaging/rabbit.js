@@ -39,7 +39,7 @@ export class RabbitBus {
       if (!msg) return;
       try {
         const payload = JSON.parse(msg.content.toString('utf8'));
-        await onMessage(payload, msg.properties.headers || {});
+        await onMessage(payload, { ...(msg.properties.headers || {}), routingKey: msg.fields.routingKey });
         this.channel.ack(msg);
       } catch (error) {
         this.logger.error({ err: error, queue }, 'rabbit_consume_failed');
