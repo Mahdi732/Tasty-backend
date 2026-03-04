@@ -19,6 +19,7 @@ export const restaurantIdParamSchema = z.object({
 });
 
 export const createRestaurantSchema = z.object({
+  creationFlow: z.enum(['DRAFT_FIRST', 'MEMBERSHIP_FIRST']).optional(),
   name: z.string().min(2),
   slug: z.string().optional(),
   description: z.string().optional(),
@@ -59,9 +60,24 @@ export const createRestaurantSchema = z.object({
       supportedOrderModes: z.array(z.string()).optional(),
     })
     .optional(),
+  subscription: z
+    .object({
+      status: z.enum(Object.values(SUBSCRIPTION_STATUS)).optional(),
+      subscriptionPlanId: z.string().nullable().optional(),
+      providerCustomerId: z.string().nullable().optional(),
+      providerSubscriptionId: z.string().nullable().optional(),
+      currentPeriodEnd: z.string().datetime().nullable().optional(),
+      cancelAtPeriodEnd: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const updateRestaurantSchema = createRestaurantSchema.partial();
+
+export const staffAssignmentSchema = z.object({
+  userId: z.string().min(1),
+  role: z.enum(['STAFF', 'MANAGER']).default('STAFF'),
+});
 
 export const suspendRestaurantSchema = z.object({
   reason: z.string().min(3),
@@ -73,10 +89,10 @@ export const reviewSchema = z.object({
 
 export const subscriptionUpdateSchema = z.object({
   status: z.enum(Object.values(SUBSCRIPTION_STATUS)).optional(),
+  subscriptionPlanId: z.string().nullable().optional(),
   planId: z.string().nullable().optional(),
   providerCustomerId: z.string().nullable().optional(),
   providerSubscriptionId: z.string().nullable().optional(),
   currentPeriodEnd: z.string().datetime().nullable().optional(),
-  trialEndsAt: z.string().datetime().nullable().optional(),
   cancelAtPeriodEnd: z.boolean().optional(),
 });
