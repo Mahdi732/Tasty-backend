@@ -169,7 +169,6 @@ export class OAuthService {
         email: profile.email || `${profile.providerUserId}@${profile.provider}.oauth.local`,
         passwordHash: null,
         roles: [ROLES.USER],
-        tenantId: null,
         isEmailVerified: Boolean(profile.emailVerified),
         emailVerifiedAt: profile.emailVerified ? new Date() : null,
         status: 'active',
@@ -196,7 +195,7 @@ export class OAuthService {
     });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles, tenantId: user.tenantId },
+      user: { id: user.id, email: user.email, roles: user.roles },
       ...tokens,
     };
   }
