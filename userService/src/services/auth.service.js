@@ -26,7 +26,6 @@ export class AuthService {
       email: payload.email,
       passwordHash,
       roles: [ROLES.USER],
-      tenantId: payload.tenantId || null,
       isEmailVerified: false,
       emailVerifiedAt: null,
       status: 'pending_email_verification',
@@ -39,7 +38,7 @@ export class AuthService {
     this.auditService.log('auth.register_success', { userId: user.id, email: user.email, ipAddress: context.ipAddress });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles, tenantId: user.tenantId },
+      user: { id: user.id, email: user.email, roles: user.roles },
       verificationRequired: !user.isEmailVerified,
     };
   }
@@ -90,7 +89,7 @@ export class AuthService {
     this.auditService.log('auth.login_success', { userId: user.id, ipAddress: context.ipAddress, sessionId: tokens.session.sessionId });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles, tenantId: user.tenantId },
+      user: { id: user.id, email: user.email, roles: user.roles },
       ...tokens,
     };
   }
@@ -115,7 +114,7 @@ export class AuthService {
     this.auditService.log('auth.refresh_success', { userId: user.id, sessionId: tokens.session.sessionId, ipAddress: context.ipAddress });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles, tenantId: user.tenantId },
+      user: { id: user.id, email: user.email, roles: user.roles },
       ...tokens,
     };
   }
