@@ -13,7 +13,6 @@ const ui = {
   baseUrl: byId('baseUrl'),
   email: byId('email'),
   password: byId('password'),
-  tenantId: byId('tenantId'),
   deviceId: byId('deviceId'),
   otpCode: byId('otpCode'),
   sessionId: byId('sessionId'),
@@ -96,7 +95,6 @@ byId('registerBtn').addEventListener('click', async () => {
     body: {
       email: ui.email.value,
       password: ui.password.value,
-      tenantId: ui.tenantId.value,
     },
   });
 });
