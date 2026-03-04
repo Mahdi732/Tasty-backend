@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import {
   ACTIVATION_BLOCKERS,
   RESTAURANT_STATUS,
+  RESTAURANT_VISIBILITY,
   SUBSCRIPTION_STATUS,
   VERIFICATION_STATUS,
 } from '../constants/restaurant.js';
@@ -59,14 +60,13 @@ const subscriptionSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(SUBSCRIPTION_STATUS),
-      default: SUBSCRIPTION_STATUS.NONE,
+      default: SUBSCRIPTION_STATUS.PENDING,
       index: true,
     },
-    planId: { type: String, default: null },
+    subscriptionPlanId: { type: String, default: null },
     providerCustomerId: { type: String, default: null },
     providerSubscriptionId: { type: String, default: null },
     currentPeriodEnd: { type: Date, default: null },
-    trialEndsAt: { type: Date, default: null },
     cancelAtPeriodEnd: { type: Boolean, default: false },
   },
   { _id: false }
@@ -105,6 +105,12 @@ const restaurantSchema = new mongoose.Schema(
       default: RESTAURANT_STATUS.DRAFT,
       index: true,
     },
+    visibility: {
+      type: String,
+      enum: Object.values(RESTAURANT_VISIBILITY),
+      default: RESTAURANT_VISIBILITY.HIDDEN,
+      index: true,
+    },
     activationBlockers: {
       type: [
         {
@@ -132,6 +138,7 @@ const restaurantSchema = new mongoose.Schema(
 
 restaurantSchema.index({ 'location.citySlug': 1, slug: 1 }, { unique: true });
 restaurantSchema.index({ status: 1, updatedAt: -1 });
+restaurantSchema.index({ visibility: 1, status: 1, updatedAt: -1 });
 restaurantSchema.index({ 'location.geo': '2dsphere' });
 restaurantSchema.index({ name: 'text', description: 'text' });
 
