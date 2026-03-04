@@ -51,6 +51,27 @@ describe('Manager restaurant scoping', () => {
       })
       .expect(201);
 
+    await request(app)
+      .patch(`/restaurants/${createA.body.data._id}/subscription`)
+      .set('x-test-user-id', 'superadmin-1')
+      .set('x-test-roles', 'superadmin')
+      .send({ status: 'ACTIVE', subscriptionPlanId: 'starter' })
+      .expect(200);
+
+    await request(app)
+      .patch(`/restaurants/${createA.body.data._id}/verify`)
+      .set('x-test-user-id', 'superadmin-1')
+      .set('x-test-roles', 'superadmin')
+      .send({ reviewNotes: 'ok' })
+      .expect(200);
+
+    await request(app)
+      .post(`/restaurants/${createA.body.data._id}/request-publish`)
+      .set('x-test-user-id', 'manager-a')
+      .set('x-test-roles', 'manager')
+      .send({})
+      .expect(200);
+
     const createB = await request(app)
       .post('/restaurants')
       .set('x-test-user-id', 'manager-a')
@@ -62,17 +83,15 @@ describe('Manager restaurant scoping', () => {
       .expect(201);
 
     await request(app)
-      .patch(`/restaurants/${createA.body.data._id}`)
+      .get(`/restaurants/${createA.body.data._id}`)
       .set('x-test-user-id', 'manager-a')
       .set('x-test-roles', 'manager')
-      .send({ description: 'updated-a' })
       .expect(200);
 
     await request(app)
-      .patch(`/restaurants/${createB.body.data._id}`)
+      .get(`/restaurants/${createB.body.data._id}`)
       .set('x-test-user-id', 'manager-a')
       .set('x-test-roles', 'manager')
-      .send({ description: 'updated-b' })
       .expect(200);
   });
 });
