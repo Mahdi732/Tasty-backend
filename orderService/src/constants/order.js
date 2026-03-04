@@ -1,0 +1,20 @@
+export const ORDER_TYPE = Object.freeze({
+  DELIVERY: 'DELIVERY',
+  PRESENCE: 'PRESENCE',
+});
+
+export const ORDER_STATUS = Object.freeze({
+  CREATED: 'CREATED',
+  CONFIRMED: 'CONFIRMED',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+});
+
+export const PAYMENT_STATUS = Object.freeze({
+  UNPAID: 'UNPAID',
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  REFUNDED: 'REFUNDED',
+});
