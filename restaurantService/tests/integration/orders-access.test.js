@@ -16,7 +16,7 @@ describe('Orders access control', () => {
     await resetDatabase();
   });
 
-  it('allows user order creation and restricts manager restaurant order access', async () => {
+  it('does not expose order endpoints after split to order service', async () => {
     const restaurantRes = await request(app)
       .post('/restaurants')
       .set('x-test-user-id', 'manager-orders')
@@ -26,7 +26,7 @@ describe('Orders access control', () => {
 
     const restaurantId = restaurantRes.body.data._id;
 
-    const orderRes = await request(app)
+    await request(app)
       .post('/orders')
       .set('x-test-user-id', 'user-1')
       .set('x-test-roles', 'user')
@@ -34,31 +34,18 @@ describe('Orders access control', () => {
         restaurantId,
         items: [{ menuItemId: 'item-1', quantity: 2 }],
       })
-      .expect(201);
-
-    expect(orderRes.body.data.userId).toBe('user-1');
-    expect(orderRes.body.data.restaurantId).toBe(restaurantId);
+      .expect(404);
 
     await request(app)
       .get(`/orders/restaurant/${restaurantId}`)
       .set('x-test-user-id', 'manager-other')
       .set('x-test-roles', 'manager')
-      .expect(403);
+      .expect(404);
 
-    const ownerView = await request(app)
-      .get(`/orders/restaurant/${restaurantId}`)
-      .set('x-test-user-id', 'manager-orders')
-      .set('x-test-roles', 'manager')
-      .expect(200);
-
-    expect(ownerView.body.data).toHaveLength(1);
-
-    const superadminView = await request(app)
+    await request(app)
       .get('/admin/orders')
       .set('x-test-user-id', 'superadmin-1')
       .set('x-test-roles', 'superadmin')
-      .expect(200);
-
-    expect(superadminView.body.data).toHaveLength(1);
+      .expect(404);
   });
 });
