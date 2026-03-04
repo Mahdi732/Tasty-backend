@@ -30,7 +30,7 @@ describe('Public menu visibility', () => {
       .patch(`/restaurants/${restaurantId}/subscription`)
       .set('x-test-user-id', 'superadmin-1')
       .set('x-test-roles', 'superadmin')
-      .send({ status: 'ACTIVE', planId: 'starter' })
+      .send({ status: 'ACTIVE', subscriptionPlanId: 'starter' })
       .expect(200);
 
     await request(app)
