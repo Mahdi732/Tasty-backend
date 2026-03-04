@@ -21,6 +21,8 @@ const envSchema = z.object({
   RABBITMQ_EXCHANGE_EVENTS: z.string().default('tasty.domain.events'),
   RABBITMQ_EXCHANGE_COMMANDS: z.string().default('tasty.domain.commands'),
   RABBITMQ_PREFETCH: z.coerce.number().int().positive().default(20),
+  RABBITMQ_QUEUE_PAYMENT: z.string().default('order.payment.events.q'),
+  RABBITMQ_QUEUE_RESTAURANT_MEMBERSHIP: z.string().default('order.restaurant.membership.events.q'),
 
   QR_SIGNING_SECRET: z.string().min(8),
   QR_TTL_SECONDS: z.coerce.number().int().positive().default(900),
