@@ -17,4 +17,12 @@ export class RestaurantUserRepository {
     });
     return Boolean(mapping);
   }
+
+  async findRestaurantIdsByUserAndRoles(userId, roles) {
+    const mappings = await this.model.find({
+      userId,
+      role: { $in: roles },
+    }).select({ restaurantId: 1 }).lean();
+    return mappings.map((mapping) => mapping.restaurantId);
+  }
 }
