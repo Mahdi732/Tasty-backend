@@ -30,19 +30,16 @@ export class MenuService {
   }
 
   async createCategory(restaurantId, auth, payload) {
-    await this.ensureManageAccess(restaurantId, auth);
     const category = await this.categoryRepository.create({ ...payload, restaurantId });
     await this.projectionService.rebuildForRestaurant(restaurantId);
     return category;
   }
 
   async listCategories(restaurantId, auth) {
-    await this.ensureManageAccess(restaurantId, auth);
     return this.categoryRepository.listByRestaurant(restaurantId);
   }
 
   async updateCategory(restaurantId, categoryId, auth, payload) {
-    await this.ensureManageAccess(restaurantId, auth);
     const category = await this.categoryRepository.findById(categoryId);
     if (!category || String(category.restaurantId) !== String(restaurantId)) {
       throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Category not found');
@@ -54,7 +51,6 @@ export class MenuService {
   }
 
   async deleteCategory(restaurantId, categoryId, auth) {
-    await this.ensureManageAccess(restaurantId, auth);
     const category = await this.categoryRepository.findById(categoryId);
     if (!category || String(category.restaurantId) !== String(restaurantId)) {
       throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Category not found');
@@ -66,8 +62,6 @@ export class MenuService {
   }
 
   async createItem(restaurantId, auth, payload) {
-    await this.ensureManageAccess(restaurantId, auth);
-
     const category = await this.categoryRepository.findById(payload.categoryId);
     if (!category || String(category.restaurantId) !== String(restaurantId)) {
       throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Category not found');
@@ -114,12 +108,10 @@ export class MenuService {
   }
 
   async listItems(restaurantId, auth) {
-    await this.ensureManageAccess(restaurantId, auth);
     return this.itemRepository.listByRestaurant(restaurantId);
   }
 
   async updateItem(restaurantId, itemId, auth, payload) {
-    await this.ensureManageAccess(restaurantId, auth);
     const item = await this.itemRepository.findById(itemId);
     if (!item || String(item.restaurantId) !== String(restaurantId)) {
       throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Menu item not found');
@@ -131,7 +123,6 @@ export class MenuService {
   }
 
   async deleteItem(restaurantId, itemId, auth) {
-    await this.ensureManageAccess(restaurantId, auth);
     const item = await this.itemRepository.findById(itemId);
     if (!item || String(item.restaurantId) !== String(restaurantId)) {
       throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Menu item not found');
