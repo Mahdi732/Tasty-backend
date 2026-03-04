@@ -10,10 +10,12 @@ export const authMiddleware = (jwtVerifier) => async (req, _res, next) => {
     }
 
     const payload = await jwtVerifier.verifyAccessToken(token);
+    const rawRoles = payload.roles || payload.role || [];
+    const roles = Array.isArray(rawRoles) ? rawRoles : [rawRoles].filter(Boolean);
+
     req.auth = {
       userId: payload.sub,
-      roles: Array.isArray(payload.role) ? payload.role : [payload.role],
-      tenantId: payload.tenantId || null,
+      roles,
       sessionId: payload.sid,
       jti: payload.jti,
     };
