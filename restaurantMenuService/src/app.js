@@ -8,10 +8,12 @@ import { requestTimeoutMiddleware } from './middlewares/timeout.middleware.js';
 import { errorMiddleware } from './middlewares/error.middleware.js';
 import { notFoundMiddleware } from './middlewares/not-found.middleware.js';
 import { authMiddleware as authMiddlewareFactory } from './middlewares/auth.middleware.js';
+import { requireRestaurantAccess } from './middlewares/restaurant-access.middleware.js';
 import { JwtVerifier } from './security/jwt.verifier.js';
 
 import { RestaurantModel } from './models/restaurant.model.js';
 import { RestaurantUserModel } from './models/restaurant-user.model.js';
+import { OrderModel } from './models/order.model.js';
 import { MenuCategoryModel } from './models/menu-category.model.js';
 import { MenuItemModel } from './models/menu-item.model.js';
 import { OptionGroupModel } from './models/option-group.model.js';
@@ -20,6 +22,7 @@ import { PublicMenuProjectionModel } from './models/public-menu-projection.model
 
 import { RestaurantRepository } from './repositories/restaurant.repository.js';
 import { RestaurantUserRepository } from './repositories/restaurant-user.repository.js';
+import { OrderRepository } from './repositories/order.repository.js';
 import { MenuCategoryRepository } from './repositories/menu-category.repository.js';
 import { MenuItemRepository } from './repositories/menu-item.repository.js';
 import { OptionGroupRepository } from './repositories/option-group.repository.js';
@@ -30,11 +33,13 @@ import { ActivationGateService } from './services/activation-gate.service.js';
 import { ProjectionService } from './services/projection.service.js';
 import { RestaurantService } from './services/restaurant.service.js';
 import { MenuService } from './services/menu.service.js';
+import { OrderService } from './services/order.service.js';
 import { PublicService } from './services/public.service.js';
 
 import { HealthController } from './controllers/health.controller.js';
 import { RestaurantController } from './controllers/restaurant.controller.js';
 import { MenuController } from './controllers/menu.controller.js';
+import { OrderController } from './controllers/order.controller.js';
 import { PublicController } from './controllers/public.controller.js';
 import { AdminController } from './controllers/admin.controller.js';
 import { buildRoutes } from './routes/index.js';
@@ -44,6 +49,7 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
 
   const restaurantRepository = new RestaurantRepository(RestaurantModel);
   const restaurantUserRepository = new RestaurantUserRepository(RestaurantUserModel);
+  const orderRepository = new OrderRepository(OrderModel);
   const categoryRepository = new MenuCategoryRepository(MenuCategoryModel);
   const itemRepository = new MenuItemRepository(MenuItemModel);
   const optionGroupRepository = new OptionGroupRepository(OptionGroupModel);
@@ -83,6 +89,12 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
     projectionService,
   });
 
+  const orderService = new OrderService({
+    orderRepository,
+    restaurantRepository,
+    restaurantUserRepository,
+  });
+
   const publicService = new PublicService({
     restaurantService,
     projectionService,
@@ -94,6 +106,7 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
   });
   const restaurantController = new RestaurantController(restaurantService);
   const menuController = new MenuController(menuService);
+  const orderController = new OrderController(orderService);
   const publicController = new PublicController(publicService);
   const adminController = new AdminController(restaurantService);
 
@@ -103,6 +116,14 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
     audience: env.JWT_AUDIENCE,
   });
   const authMiddleware = authMiddlewareOverride || authMiddlewareFactory(jwtVerifier);
+  const requireRestaurantManageAccess = requireRestaurantAccess({
+    restaurantUserRepository,
+    restaurantIdExtractor: (req) => req.params.id,
+  });
+  const requireRestaurantOrderAccess = requireRestaurantAccess({
+    restaurantUserRepository,
+    restaurantIdExtractor: (req) => req.params.restaurantId,
+  });
 
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(requestIdMiddleware);
@@ -119,8 +140,11 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride } = {}) => 
       publicController,
       restaurantController,
       menuController,
+      orderController,
       adminController,
       authMiddleware,
+      requireRestaurantManageAccess,
+      requireRestaurantOrderAccess,
     })
   );
 
