@@ -43,7 +43,7 @@ describe('Lifecycle request publish', () => {
       .patch(`/restaurants/${restaurantId}/subscription`)
       .set('x-test-user-id', 'superadmin-1')
       .set('x-test-roles', 'superadmin')
-      .send({ status: 'ACTIVE', planId: 'pro-monthly' })
+      .send({ status: 'ACTIVE', subscriptionPlanId: 'pro-monthly' })
       .expect(200);
 
     await request(app)
