@@ -1,0 +1,29 @@
+services:
+  restaurant-menu-service:
+    build: .
+    container_name: tasty-restaurant-menu-service
+    ports:
+      - "4010:4010"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - redis
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: tasty-restaurant-mongo
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: tasty-restaurant-redis
+    ports:
+      - "6381:6379"
+
+volumes:
+  mongo-data:
