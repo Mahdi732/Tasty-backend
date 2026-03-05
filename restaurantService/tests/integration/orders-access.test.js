@@ -16,7 +16,7 @@ describe('Orders access control', () => {
     await resetDatabase();
   });
 
-  it('does not expose order endpoints after split to order service', async () => {
+  it('returns not found for legacy order endpoints after service split', async () => {
     const restaurantRes = await request(app)
       .post('/restaurants')
       .set('x-test-user-id', 'manager-orders')
