@@ -5,6 +5,7 @@ const platformSchema = z.enum(['web', 'mobile', 'desktop', 'android', 'ios']);
 export const oauthStartQuerySchema = z.object({
   mode: z.enum(['login', 'link']).default('login'),
   platform: platformSchema.default('web'),
+  appRedirect: z.string().url().optional(),
 });
 
 export const oauthCallbackQuerySchema = z.object({
