@@ -191,6 +191,7 @@ const envSchema = z.object({
 
   OAUTH_STATE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   ALLOW_AUTO_LINK_VERIFIED_OAUTH_EMAIL: envBoolean().default(false),
+  WEB_APP_URL: z.string().url().default('http://localhost:3000'),
 
   EMAIL_VERIFICATION_ENABLED: envBoolean().default(true),
   EMAIL_VERIFICATION_CODE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
