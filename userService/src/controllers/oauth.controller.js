@@ -23,6 +23,7 @@ export class OAuthController {
     const result = await this.oauthService.start(req.params.provider, {
       mode: req.query.mode,
       platform: req.query.platform,
+      appRedirect: req.query.appRedirect,
       currentUserId: req.auth?.userId || null,
     });
     return ok(res, result);
@@ -40,6 +41,20 @@ export class OAuthController {
 
     if (result.refreshToken) {
       attachRefreshToken(res, this.env, result.refreshToken);
+    }
+
+    const oauthContext = result.oauthContext || {};
+    const shouldRedirectToWeb = oauthContext.mode === 'login' && oauthContext.platform === 'web';
+
+    if (shouldRedirectToWeb) {
+      const redirectBase = oauthContext.appRedirect || `${this.env.WEB_APP_URL}/oauth/callback`;
+      const redirectUrl = new URL(redirectBase);
+      redirectUrl.searchParams.set('provider', req.params.provider);
+      redirectUrl.searchParams.set('accessToken', result.accessToken || '');
+      if (result.refreshToken) {
+        redirectUrl.searchParams.set('refreshToken', result.refreshToken);
+      }
+      return res.redirect(302, redirectUrl.toString());
     }
 
     return ok(res, {
