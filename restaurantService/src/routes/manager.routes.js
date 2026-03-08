@@ -5,7 +5,9 @@ import { asyncHandler } from '../utils/async-handler.js';
 import { ROLES } from '../constants/roles.js';
 import {
   createRestaurantSchema,
+  lowStockAlertSchema,
   restaurantIdParamSchema,
+  restoreFeeRequestSchema,
   staffAssignmentSchema,
   updateRestaurantSchema,
 } from '../validators/restaurant.validator.js';
@@ -58,6 +60,29 @@ export const buildManagerRoutes = ({ restaurantController, menuController, requi
     requireRestaurantManageAccess,
     validate(staffAssignmentSchema),
     asyncHandler(restaurantController.addStaff)
+  );
+  router.post(
+    '/restaurants/:id/archive',
+    requireRole(ROLES.MANAGER, ROLES.SUPERADMIN),
+    validate(restaurantIdParamSchema, 'params'),
+    requireRestaurantManageAccess,
+    asyncHandler(restaurantController.archive)
+  );
+  router.post(
+    '/restaurants/:id/restore/request-fee',
+    requireRole(ROLES.MANAGER, ROLES.SUPERADMIN),
+    validate(restaurantIdParamSchema, 'params'),
+    requireRestaurantManageAccess,
+    validate(restoreFeeRequestSchema),
+    asyncHandler(restaurantController.requestRestore)
+  );
+  router.post(
+    '/restaurants/:id/inventory/low-stock-alert',
+    requireRole(ROLES.CHEF, ROLES.SUPERADMIN),
+    validate(restaurantIdParamSchema, 'params'),
+    requireRestaurantManageAccess,
+    validate(lowStockAlertSchema),
+    asyncHandler(restaurantController.triggerLowStockAlert)
   );
 
   router.post(
