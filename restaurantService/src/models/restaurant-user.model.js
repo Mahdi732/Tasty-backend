@@ -4,7 +4,7 @@ const restaurantUserSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true, index: true },
     restaurantId: { type: String, required: true, index: true },
-    role: { type: String, enum: ['OWNER', 'MANAGER', 'STAFF'], default: 'MANAGER' },
+    role: { type: String, enum: ['OWNER', 'MANAGER', 'STAFF', 'DELIVERY_MAN', 'CHEF'], default: 'MANAGER' },
   },
   { timestamps: true, versionKey: false }
 );
