@@ -76,7 +76,18 @@ export const updateRestaurantSchema = createRestaurantSchema.partial();
 
 export const staffAssignmentSchema = z.object({
   userId: z.string().min(1),
-  role: z.enum(['STAFF', 'MANAGER']).default('STAFF'),
+  role: z.enum(['STAFF', 'MANAGER', 'DELIVERY_MAN', 'CHEF']).default('STAFF'),
+});
+
+export const lowStockAlertSchema = z.object({
+  ingredient: z.string().min(1),
+  level: z.number().min(0).optional(),
+  threshold: z.number().min(0).optional(),
+  note: z.string().optional(),
+});
+
+export const restoreFeeRequestSchema = z.object({
+  reason: z.string().min(3).optional(),
 });
 
 export const suspendRestaurantSchema = z.object({
