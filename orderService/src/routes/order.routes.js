@@ -20,7 +20,7 @@ export const buildOrderRoutes = ({
   router.get(
     '/restaurant/:restaurantId',
     validate(restaurantOrdersParamSchema, 'params'),
-    requireRole(ROLES.WORKER, ROLES.STAFF, ROLES.MANAGER, ROLES.SUPERADMIN),
+    requireRole(ROLES.STAFF, ROLES.MANAGER, ROLES.DELIVERY_MAN, ROLES.SUPERADMIN),
     requireRestaurantAccess,
     asyncHandler(orderController.restaurantOrders)
   );
@@ -30,7 +30,7 @@ export const buildOrderRoutes = ({
   router.post(
     '/qr/scan',
     validate(scanQrSchema),
-    requireRole(ROLES.WORKER, ROLES.STAFF, ROLES.MANAGER, ROLES.SUPERADMIN),
+    requireRole(ROLES.STAFF, ROLES.MANAGER, ROLES.DELIVERY_MAN, ROLES.SUPERADMIN),
     asyncHandler(orderController.scanQr)
   );
 
