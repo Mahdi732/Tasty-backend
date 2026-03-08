@@ -128,6 +128,10 @@ const restaurantSchema = new mongoose.Schema(
     activatedAt: { type: Date, default: null },
     suspendedAt: { type: Date, default: null },
     suspendedReason: { type: String, default: null },
+    archivedAt: { type: Date, default: null },
+    archivedBy: { type: String, default: null },
+    restoreFeeRequired: { type: Boolean, default: false },
+    restoreFeePaidAt: { type: Date, default: null },
 
     deletedAt: { type: Date, default: null, index: true },
     createdBy: { type: String, required: true, index: true },
