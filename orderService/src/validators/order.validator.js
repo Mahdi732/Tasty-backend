@@ -1,15 +1,18 @@
 import { z } from 'zod';
-import { ORDER_TYPE } from '../constants/order.js';
+import { ORDER_TYPE, PAYMENT_METHOD } from '../constants/order.js';
 
 export const createOrderSchema = z.object({
   restaurantId: z.string().min(1),
-  orderType: z.enum(Object.values(ORDER_TYPE)),
-  paymentRequired: z.boolean().optional().default(true),
+  orderType: z.enum(Object.values(ORDER_TYPE)).default(ORDER_TYPE.DELIVERY),
+  paymentMethod: z.enum(Object.values(PAYMENT_METHOD)).default(PAYMENT_METHOD.PAY_ON_APP),
   restaurantSnapshot: z.object({
     name: z.string().min(1),
     slug: z.string().nullable().optional(),
     citySlug: z.string().nullable().optional(),
     version: z.number().int().positive().optional().default(1),
+    taxRate: z.number().min(0).optional().default(0),
+    serviceFee: z.number().min(0).optional().default(0),
+    currency: z.string().optional().default('USD'),
   }),
   fulfillment: z.object({
     mode: z.enum(Object.values(ORDER_TYPE)),
