@@ -1,7 +1,8 @@
 import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 import { EVENTS } from '../constants/messaging.js';
-import { ORDER_STATUS, PAYMENT_STATUS } from '../constants/order.js';
+import { ORDER_STATUS, ORDER_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/order.js';
+import { ROLES } from '../constants/roles.js';
 
 export class OrderService {
   constructor({ orderRepository, membershipRepository, processedEventRepository, qrService, rabbitBus, logger }) {
@@ -18,7 +19,80 @@ export class OrderService {
     return { subtotal, tax: 0, serviceFee: 0, discount: 0, total: subtotal };
   }
 
+  deriveInitialState({ orderType, paymentMethod }) {
+    const isPayOnApp = paymentMethod === PAYMENT_METHOD.PAY_ON_APP;
+    return {
+      orderStatus: isPayOnApp ? ORDER_STATUS.PAID : ORDER_STATUS.CREATED,
+      paymentStatus: isPayOnApp ? PAYMENT_STATUS.PAID : PAYMENT_STATUS.UNPAID,
+      paymentMethod,
+      orderType,
+    };
+  }
+
+  buildImmutableSnapshot(payload, items, totals) {
+    return {
+      restaurant: {
+        id: String(payload.restaurantId),
+        name: payload.restaurantSnapshot.name,
+        slug: payload.restaurantSnapshot.slug || null,
+        citySlug: payload.restaurantSnapshot.citySlug || null,
+        version: payload.restaurantSnapshot.version || 1,
+        taxRateAtOrder: payload.restaurantSnapshot.taxRate ?? 0,
+        serviceFeeAtOrder: payload.restaurantSnapshot.serviceFee ?? 0,
+        currency: payload.restaurantSnapshot.currency || 'USD',
+      },
+      items,
+      totals,
+      capturedAt: new Date(),
+    };
+  }
+
+  determineScanOutcome(order) {
+    const isPayLater = order.payment?.method === PAYMENT_METHOD.PAY_LATER;
+
+    if (order.orderType === ORDER_TYPE.DELIVERY) {
+      return {
+        orderStatus: isPayLater ? ORDER_STATUS.PAID : ORDER_STATUS.DELIVERED,
+        paymentStatus: isPayLater ? PAYMENT_STATUS.PAID : order.payment.status,
+      };
+    }
+
+    if (order.orderType === ORDER_TYPE.PREORDER) {
+      return {
+        orderStatus: ORDER_STATUS.OBTAINED,
+        paymentStatus: isPayLater ? PAYMENT_STATUS.PAID : order.payment.status,
+      };
+    }
+
+    return {
+      orderStatus: ORDER_STATUS.FINISHED,
+      paymentStatus: isPayLater ? PAYMENT_STATUS.PAID : order.payment.status,
+    };
+  }
+
+  async assertScannerAuthorized(order, auth) {
+    const roles = auth.roles || [];
+
+    if (roles.includes(ROLES.SUPERADMIN)) {
+      return;
+    }
+
+    const allowedForOrderType = order.orderType === ORDER_TYPE.DELIVERY
+      ? roles.includes(ROLES.DELIVERY_MAN)
+      : (roles.includes(ROLES.STAFF) || roles.includes(ROLES.MANAGER));
+
+    if (!allowedForOrderType) {
+      throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Scanner role is not authorized for this order flow');
+    }
+
+    const hasAccess = await this.membershipRepository.hasRestaurantAccess(order.restaurantId, auth.userId);
+    if (!hasAccess) {
+      throw new ApiError(403, ERROR_CODES.TENANT_ACCESS_DENIED, 'Access denied for this restaurant');
+    }
+  }
+
   async createOrder(auth, payload, headers = {}) {
+    const initialState = this.deriveInitialState(payload);
     const qr = this.qrService.buildTokenPayload({
       orderId: 'pending',
       restaurantId: payload.restaurantId,
@@ -32,17 +106,22 @@ export class OrderService {
       lineTotal: item.unitPrice * item.quantity,
     }));
 
+    const totals = this.calcTotals(items);
+    const immutableSnapshot = this.buildImmutableSnapshot(payload, items, totals);
+
     const order = await this.orderRepository.create({
       userId: auth.userId,
       restaurantId: String(payload.restaurantId),
-      orderType: payload.orderType,
-      orderStatus: ORDER_STATUS.CREATED,
+      orderType: initialState.orderType,
+      orderStatus: initialState.orderStatus,
       items,
       restaurantSnapshot: payload.restaurantSnapshot,
+      immutableSnapshot,
       fulfillment: payload.fulfillment,
-      totals: this.calcTotals(items),
+      totals,
       payment: {
-        status: payload.paymentRequired ? PAYMENT_STATUS.PENDING : PAYMENT_STATUS.UNPAID,
+        method: initialState.paymentMethod,
+        status: initialState.paymentStatus,
         resourceType: 'ORDER',
       },
       qr: {
@@ -75,6 +154,29 @@ export class OrderService {
       expiresAt: finalQr.expiresAt.toISOString(),
     }, headers);
 
+    await this.rabbitBus.publishEvent(EVENTS.PAYMENT_VERIFY, {
+      orderId: String(updated._id),
+      userId: updated.userId,
+      restaurantId: updated.restaurantId,
+      paymentMethod: updated.payment.method,
+      amount: updated.totals.total,
+    }, headers);
+
+    await this.rabbitBus.publishEvent(EVENTS.INVENTORY_CHECK, {
+      orderId: String(updated._id),
+      restaurantId: updated.restaurantId,
+      items: updated.items.map((item) => ({ menuItemId: item.menuItemId, quantity: item.quantity })),
+    }, headers);
+
+    if (updated.payment.status === PAYMENT_STATUS.PAID) {
+      await this.rabbitBus.publishEvent(EVENTS.ORDER_PAID, {
+        orderId: String(updated._id),
+        restaurantId: updated.restaurantId,
+        userId: updated.userId,
+        total: updated.totals.total,
+      }, headers);
+    }
+
     return { ...updated.toObject(), qrToken: finalQr.rawToken };
   }
 
@@ -83,6 +185,10 @@ export class OrderService {
   }
 
   async listRestaurantOrders(restaurantId, auth) {
+    if (auth.roles?.includes(ROLES.SUPERADMIN)) {
+      return this.orderRepository.listByRestaurant(restaurantId);
+    }
+
     const hasAccess = await this.membershipRepository.hasRestaurantAccess(restaurantId, auth.userId);
     if (!hasAccess) {
       throw new ApiError(403, ERROR_CODES.TENANT_ACCESS_DENIED, 'Access denied for this restaurant');
@@ -94,7 +200,7 @@ export class OrderService {
     return this.orderRepository.listAll();
   }
 
-  async scanQr(rawToken, workerId, headers = {}) {
+  async scanQr(rawToken, auth, headers = {}) {
     const verified = this.qrService.verifyToken(rawToken);
     if (!verified.valid) {
       throw new ApiError(400, ERROR_CODES.VALIDATION_ERROR, 'Invalid QR token');
@@ -115,16 +221,39 @@ export class OrderService {
       throw new ApiError(400, ERROR_CODES.VALIDATION_ERROR, 'Invalid QR token');
     }
 
+    await this.assertScannerAuthorized(order, auth);
+
+    const outcome = this.determineScanOutcome(order);
+
     const updated = await this.orderRepository.updateById(orderId, {
       'qr.scannedAt': new Date(),
-      'qr.scannedBy': workerId,
-      orderStatus: ORDER_STATUS.COMPLETED,
+      'qr.scannedBy': auth.userId,
+      orderStatus: outcome.orderStatus,
+      'payment.status': outcome.paymentStatus,
     });
 
     await this.rabbitBus.publishEvent('order.qr.scanned', {
       orderId: String(updated._id),
       restaurantId: updated.restaurantId,
-      scannedBy: workerId,
+      scannedBy: auth.userId,
+      orderStatus: updated.orderStatus,
+      paymentStatus: updated.payment.status,
+    }, headers);
+
+    if (updated.payment.status === PAYMENT_STATUS.PAID) {
+      await this.rabbitBus.publishEvent(EVENTS.ORDER_PAID, {
+        orderId: String(updated._id),
+        restaurantId: updated.restaurantId,
+        userId: updated.userId,
+        total: updated.totals.total,
+      }, headers);
+    }
+
+    await this.rabbitBus.publishEvent(EVENTS.INVENTORY_CONSUMED, {
+      orderId: String(updated._id),
+      restaurantId: updated.restaurantId,
+      items: updated.items.map((item) => ({ menuItemId: item.menuItemId, quantity: item.quantity })),
+      consumedAt: new Date().toISOString(),
     }, headers);
 
     return updated;
@@ -147,6 +276,13 @@ export class OrderService {
     await this.rabbitBus.publishEvent(EVENTS.ORDER_PAYMENT_STATUS_CHANGED, {
       orderId: String(updated._id),
       paymentStatus: PAYMENT_STATUS.PAID,
+    }, headers);
+
+    await this.rabbitBus.publishEvent(EVENTS.ORDER_PAID, {
+      orderId: String(updated._id),
+      restaurantId: updated.restaurantId,
+      userId: updated.userId,
+      total: updated.totals.total,
     }, headers);
   }
 }
