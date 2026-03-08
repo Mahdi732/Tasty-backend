@@ -240,6 +240,68 @@ export class RestaurantService {
     }
   }
 
+  async archiveRestaurant(restaurantId, auth) {
+    const restaurant = await this.restaurantRepository.findById(restaurantId);
+    if (!restaurant) throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Restaurant not found');
+
+    if (restaurant.status === RESTAURANT_STATUS.ARCHIVED) {
+      throw new ApiError(409, ERROR_CODES.CONFLICT, 'Restaurant already archived');
+    }
+
+    const updated = await this.restaurantRepository.updateById(restaurantId, {
+      status: RESTAURANT_STATUS.ARCHIVED,
+      visibility: RESTAURANT_VISIBILITY.HIDDEN,
+      archivedAt: new Date(),
+      archivedBy: auth.userId,
+      restoreFeeRequired: true,
+      restoreFeePaidAt: null,
+      updatedBy: auth.userId,
+    });
+
+    await this.publishEvent(EVENTS.RESTAURANT_ARCHIVED, {
+      restaurantId: String(updated._id),
+      archivedBy: auth.userId,
+    });
+
+    return updated;
+  }
+
+  async requestRestoreFee(restaurantId, auth, payload = {}) {
+    const restaurant = await this.restaurantRepository.findById(restaurantId);
+    if (!restaurant) throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Restaurant not found');
+
+    if (restaurant.status !== RESTAURANT_STATUS.ARCHIVED) {
+      throw new ApiError(409, ERROR_CODES.CONFLICT, 'Restore fee can only be requested for archived restaurants');
+    }
+
+    await this.publishEvent(EVENTS.RESTORE_FEE_PAYMENT_REQUESTED, {
+      restaurantId: String(restaurant._id),
+      requestedBy: auth.userId,
+      reason: payload.reason || null,
+      feeType: 'RESTORE_FEE_PAYMENT',
+    });
+
+    return restaurant;
+  }
+
+  async triggerLowStockAlert(restaurantId, auth, payload) {
+    const restaurant = await this.restaurantRepository.findById(restaurantId);
+    if (!restaurant) throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Restaurant not found');
+
+    await this.publishEvent(EVENTS.INVENTORY_CHECK, {
+      restaurantId: String(restaurant._id),
+      requestedBy: auth.userId,
+      trigger: 'CHEF_LOW_STOCK_ALERT',
+      ...payload,
+    });
+
+    return {
+      accepted: true,
+      restaurantId: String(restaurant._id),
+      trigger: 'CHEF_LOW_STOCK_ALERT',
+    };
+  }
+
   async verifyRestaurant(restaurantId, auth, reviewNotes) {
     const restaurant = await this.restaurantRepository.findById(restaurantId);
     if (!restaurant) throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Restaurant not found');
