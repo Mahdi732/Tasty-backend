@@ -27,7 +27,7 @@ export class OrderController {
   };
 
   scanQr = async (req, res) => {
-    const updated = await this.orderService.scanQr(req.body.qrToken, req.auth.userId, buildEventHeaders(req));
+    const updated = await this.orderService.scanQr(req.body.qrToken, req.auth, buildEventHeaders(req));
     return ok(res, updated);
   };
 }
