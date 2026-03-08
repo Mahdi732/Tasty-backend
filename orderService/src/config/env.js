@@ -25,7 +25,7 @@ const envSchema = z.object({
   RABBITMQ_QUEUE_RESTAURANT_MEMBERSHIP: z.string().default('order.restaurant.membership.events.q'),
 
   QR_SIGNING_SECRET: z.string().min(8),
-  QR_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+  QR_TTL_SECONDS: z.coerce.number().int().positive().default(10800),
 });
 
 const parsed = envSchema.safeParse(process.env);

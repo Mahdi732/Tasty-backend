@@ -1,7 +1,11 @@
 export const EVENTS = Object.freeze({
   ORDER_CREATED: 'order.created',
   ORDER_QR_GENERATED: 'order.qr.generated',
+  ORDER_PAID: 'order.paid',
   ORDER_PAYMENT_STATUS_CHANGED: 'order.payment.status.changed',
+  INVENTORY_CHECK: 'inventory.check',
+  INVENTORY_CONSUMED: 'inventory.consumed',
+  PAYMENT_VERIFY: 'payment.verify',
   PAYMENT_SUCCEEDED: 'payment.succeeded',
   PAYMENT_FAILED: 'payment.failed',
   PAYMENT_REFUNDED: 'payment.refunded',
