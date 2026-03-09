@@ -1,0 +1,32 @@
+services:
+  face-recognition-service:
+    build: .
+    container_name: tasty-face-recognition-service
+    ports:
+      - "4030:4030"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - python-embedder
+    restart: unless-stopped
+
+  python-embedder:
+    build:
+      context: ./python-embedder
+      dockerfile: Dockerfile
+    container_name: tasty-python-embedder
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: tasty-face-mongo
+    ports:
+      - "27030:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
