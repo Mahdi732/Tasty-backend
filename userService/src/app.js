@@ -29,12 +29,15 @@ import { TokenService } from './services/token.service.js';
 import { SessionService } from './services/session.service.js';
 import { AuthService } from './services/auth.service.js';
 import { UserService } from './services/user.service.js';
+import { FaceRecognitionClient } from './services/face-recognition.client.js';
 import { EmailVerificationService } from './services/email-verification.service.js';
 import { NodemailerEmailSender } from './services/email/nodemailer-email.sender.js';
 import { NoopEmailSender } from './services/email/noop-email.sender.js';
 import { OAuthProviderFactory } from './oauth/oauth-provider.factory.js';
 import { OAuthClientConfigResolver } from './oauth/oauth-client-config.resolver.js';
 import { OAuthService } from './services/oauth.service.js';
+import { DomainEventPublisher } from './services/domain-event.publisher.js';
+import { PendingFaceActivationCleanupJob } from './jobs/pending-face-activation-cleanup.job.js';
 import { HealthController } from './controllers/health.controller.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { OAuthController } from './controllers/oauth.controller.js';
@@ -111,7 +114,25 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
     emailVerificationService,
   });
 
-  const userService = new UserService(userRepository);
+  const faceRecognitionClient = new FaceRecognitionClient({
+    baseUrl: env.FACE_SERVICE_BASE_URL,
+    apiKey: env.FACE_SERVICE_API_KEY,
+    timeoutMs: env.FACE_SERVICE_TIMEOUT_MS,
+    logger,
+  });
+
+  const domainEventPublisher = new DomainEventPublisher({
+    url: env.RABBITMQ_URL,
+    exchange: env.RABBITMQ_EVENTS_EXCHANGE,
+    logger,
+  });
+
+  const userService = new UserService({
+    userRepository,
+    faceRecognitionClient,
+    env,
+    auditService,
+  });
 
   const oauthProviderFactory = new OAuthProviderFactory();
   const oauthClientConfigResolver = new OAuthClientConfigResolver(env);
@@ -132,7 +153,15 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
   const sessionController = new SessionController(sessionService);
   const authMetaController = new AuthMetaController(new JwksConfig(env));
 
-  const authMiddleware = authMiddlewareFactory(jwtVerifier);
+  const authMiddleware = authMiddlewareFactory(jwtVerifier, userRepository);
+
+  const pendingFaceActivationCleanupJob = new PendingFaceActivationCleanupJob({
+    env,
+    userRepository,
+    domainEventPublisher,
+    logger,
+  });
+  pendingFaceActivationCleanupJob.start();
 
   const globalLimiter = createRateLimiter(redisClient, {
     windowMs: env.RATE_LIMIT_WINDOW_MS,
@@ -189,6 +218,9 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware(logger));
+
+  app.locals.pendingFaceActivationCleanupJob = pendingFaceActivationCleanupJob;
+  app.locals.domainEventPublisher = domainEventPublisher;
 
   return app;
 };
