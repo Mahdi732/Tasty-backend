@@ -22,3 +22,9 @@ export const verifyFaceSchema = baseImageSchema.extend({
   personRef: z.string().min(1),
   threshold: z.number().positive().optional(),
 });
+
+export const compareIdWithFaceSchema = z.object({
+  idCardImageBase64: z.string().min(20),
+  liveImageBase64: z.string().min(20),
+  tenantId: z.string().min(1),
+});
