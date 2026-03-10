@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema(
     },
     isFaceVerified: { type: Boolean, default: false },
     faceIdentityId: { type: String, default: null },
+    idCardImage: { type: Buffer, default: null, select: false },
     activationDeadline: { type: Date, default: null, index: true },
     settings: {
       enableFaceLogin: { type: Boolean, default: false },
