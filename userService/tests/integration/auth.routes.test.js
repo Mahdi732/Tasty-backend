@@ -19,7 +19,7 @@ describe('Auth routes', () => {
     await stopMongoMemory();
   });
 
-  it('register + login + me works', async () => {
+  it('register + login + profile works with pending face activation policy', async () => {
     const registerRes = await ctx.request.post('/auth/register').send({
       email: 'user1@example.com',
       password: 'StrongPass!123',
@@ -65,7 +65,14 @@ describe('Auth routes', () => {
       .get('/auth/me')
       .set('Authorization', `Bearer ${accessToken}`);
 
-    expect(meRes.status).toBe(200);
-    expect(meRes.body.data.email).toBe('user1@example.com');
+    expect(meRes.status).toBe(403);
+
+    const profileRes = await ctx.request
+      .get('/profile')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.data.email).toBe('user1@example.com');
+    expect(profileRes.body.data.status).toBe('PENDING_FACE_ACTIVATION');
   });
 });
