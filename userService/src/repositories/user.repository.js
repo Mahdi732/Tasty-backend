@@ -1,3 +1,5 @@
+import { USER_STATUS } from '../constants/user-status.js';
+
 export class UserRepository {
   constructor(userModel) {
     this.userModel = userModel;
@@ -17,5 +19,22 @@ export class UserRepository {
 
   async save(user) {
     return user.save();
+  }
+
+  async findExpiredPendingFaceActivation(now, limit = 200) {
+    return this.userModel
+      .find({
+        status: USER_STATUS.PENDING_FACE_ACTIVATION,
+        activationDeadline: { $lt: now },
+      })
+      .limit(limit)
+      .lean();
+  }
+
+  async deleteByIds(ids) {
+    if (!ids?.length) {
+      return { deletedCount: 0 };
+    }
+    return this.userModel.deleteMany({ _id: { $in: ids } });
   }
 }
