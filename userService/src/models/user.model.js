@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { ROLE_LIST, ROLES } from '../constants/roles.js';
+import { USER_STATUS_LIST, USER_STATUS } from '../constants/user-status.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -10,9 +11,16 @@ const userSchema = new mongoose.Schema(
     emailVerifiedAt: { type: Date, default: null },
     status: {
       type: String,
-      enum: ['pending_email_verification', 'active', 'disabled', 'locked'],
-      default: 'pending_email_verification',
+      enum: USER_STATUS_LIST,
+      default: USER_STATUS.PENDING_EMAIL_VERIFICATION,
       index: true,
+    },
+    isFaceVerified: { type: Boolean, default: false },
+    faceIdentityId: { type: String, default: null },
+    activationDeadline: { type: Date, default: null, index: true },
+    settings: {
+      enableFaceLogin: { type: Boolean, default: false },
+      enableOrderFaceConfirm: { type: Boolean, default: false },
     },
     failedLoginCount: { type: Number, default: 0 },
     lockUntil: { type: Date, default: null },
