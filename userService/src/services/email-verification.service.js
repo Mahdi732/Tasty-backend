@@ -3,6 +3,7 @@ import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 import { hmacSha256 } from '../security/crypto.utils.js';
 import { timingSafeEqualHex } from '../security/timing-safe.js';
+import { USER_STATUS } from '../constants/user-status.js';
 
 const PURPOSE = 'email_verification';
 
@@ -146,8 +147,11 @@ export class EmailVerificationService {
 
     user.isEmailVerified = true;
     user.emailVerifiedAt = new Date();
-    if (user.status === 'pending_email_verification') {
-      user.status = 'active';
+    if (user.status === USER_STATUS.PENDING_EMAIL_VERIFICATION) {
+      user.status = USER_STATUS.PENDING_FACE_ACTIVATION;
+      user.activationDeadline = new Date(
+        Date.now() + this.env.ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS * 24 * 60 * 60 * 1000
+      );
     }
     await this.userRepository.save(user);
 
