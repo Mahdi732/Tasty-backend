@@ -146,4 +146,32 @@ export class FaceService {
 
     return result;
   }
+
+  async compareIdWithFace(payload, context) {
+    const startedAt = Date.now();
+    const idCardBuffer = decodeBase64Image(payload.idCardImageBase64);
+    const liveImageBuffer = decodeBase64Image(payload.liveImageBase64);
+
+    const compareResult = await this.embedderClient.compareIdWithFace(idCardBuffer, liveImageBuffer);
+
+    const result = {
+      matched: Boolean(compareResult?.matched),
+      score: Number(compareResult?.score || 0),
+      threshold: Number(compareResult?.threshold || 0),
+      livenessStatus: String(compareResult?.livenessStatus || 'UNKNOWN'),
+      spoofScore: Number(compareResult?.spoofScore || 0),
+      reasons: Array.isArray(compareResult?.reasons) ? compareResult.reasons : [],
+    };
+
+    await this.vectorRepository.createEvent({
+      requestId: context.requestId,
+      eventType: 'FACE_ID_VERIFIED',
+      tenantId: payload.tenantId,
+      personRef: null,
+      result,
+      latencyMs: Date.now() - startedAt,
+    });
+
+    return result;
+  }
 }
