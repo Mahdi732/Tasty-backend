@@ -2,6 +2,7 @@ import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 import { assertStrongPassword } from '../security/password.policy.js';
 import { ROLES } from '../constants/roles.js';
+import { USER_STATUS } from '../constants/user-status.js';
 
 export class AuthService {
   constructor({ userRepository, passwordHasher, tokenService, sessionService, auditService, emailVerificationService }) {
@@ -28,7 +29,10 @@ export class AuthService {
       roles: [ROLES.USER],
       isEmailVerified: false,
       emailVerifiedAt: null,
-      status: 'pending_email_verification',
+      isFaceVerified: false,
+      faceIdentityId: null,
+      activationDeadline: null,
+      status: USER_STATUS.PENDING_EMAIL_VERIFICATION,
     });
 
     if (this.emailVerificationService && this.emailVerificationService.env.EMAIL_VERIFICATION_ENABLED) {
@@ -66,7 +70,7 @@ export class AuthService {
       throw new ApiError(401, ERROR_CODES.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
     }
 
-    if (user.status === 'pending_email_verification' || !user.isEmailVerified) {
+    if (user.status === USER_STATUS.PENDING_EMAIL_VERIFICATION || !user.isEmailVerified) {
       throw new ApiError(
         403,
         ERROR_CODES.EMAIL_NOT_VERIFIED,
@@ -76,7 +80,7 @@ export class AuthService {
       );
     }
 
-    if (user.status !== 'active') {
+    if (![USER_STATUS.ACTIVE, USER_STATUS.PENDING_FACE_ACTIVATION].includes(user.status)) {
       throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Account disabled');
     }
 
@@ -102,7 +106,7 @@ export class AuthService {
     }
 
     const user = await this.userRepository.findById(session.userId);
-    if (!user || user.status !== 'active') {
+    if (!user || ![USER_STATUS.ACTIVE, USER_STATUS.PENDING_FACE_ACTIVATION].includes(user.status)) {
       throw new ApiError(401, ERROR_CODES.AUTH_UNAUTHORIZED, 'Invalid refresh token');
     }
 
