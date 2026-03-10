@@ -202,6 +202,18 @@ const envSchema = z.object({
   EMAIL_VERIFICATION_EMAIL_MAX_PER_WINDOW: z.coerce.number().int().positive().default(5),
   EMAIL_VERIFICATION_HASH_SECRET: z.string().optional().default(''),
 
+  FACE_SERVICE_BASE_URL: z.string().url().default('http://localhost:4030'),
+  FACE_SERVICE_API_KEY: z.string().min(8).default('change-me-key'),
+  FACE_SERVICE_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  FACE_SERVICE_TENANT_ID: z.string().min(1).default('global'),
+  FACE_SERVICE_SEARCH_THRESHOLD: z.coerce.number().positive().default(0.62),
+  ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS: z.coerce.number().int().positive().default(10),
+  JANITOR_CRON_SCHEDULE: z.string().default('0 0 * * *'),
+  JANITOR_CLEANUP_BATCH_SIZE: z.coerce.number().int().positive().default(200),
+  RABBITMQ_URL: z.string().default('amqp://localhost:5672'),
+  RABBITMQ_EVENTS_EXCHANGE: z.string().default('tasty.domain.events'),
+  USER_DELETED_CLEANUP_ROUTING_KEY: z.string().default('user.deleted.cleanup'),
+
   SMTP_ENABLED: envBoolean().default(false),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
