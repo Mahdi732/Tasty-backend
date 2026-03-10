@@ -5,3 +5,4 @@ export const connectMongo = async (uri) => {
     autoIndex: true,
   });
 };
+

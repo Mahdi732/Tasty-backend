@@ -31,3 +31,4 @@ export const buildOauthRoutes = ({ oauthController, authMiddleware }) => {
 
   return router;
 };
+

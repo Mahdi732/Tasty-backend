@@ -17,3 +17,4 @@ export class IdCardVaultService {
     return Buffer.concat([iv, tag, encrypted]);
   }
 }
+

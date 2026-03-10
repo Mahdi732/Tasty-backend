@@ -46,3 +46,4 @@ describe('Public read returns ACTIVE restaurants only', () => {
     expect(response.body.data[0].slug).toBe('active-r');
   });
 });
+

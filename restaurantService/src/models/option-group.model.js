@@ -23,3 +23,4 @@ const optionGroupSchema = new mongoose.Schema(
 optionGroupSchema.index({ restaurantId: 1, sortOrder: 1 });
 
 export const OptionGroupModel = mongoose.model('OptionGroup', optionGroupSchema);
+

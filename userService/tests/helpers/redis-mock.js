@@ -47,3 +47,4 @@ export class RedisMock {
     return 1;
   }
 }
+

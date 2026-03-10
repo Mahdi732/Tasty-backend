@@ -42,3 +42,4 @@ export class MenuItemRepository {
     return this.updateById(id, { deletedAt: new Date() });
   }
 }
+

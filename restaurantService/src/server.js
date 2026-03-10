@@ -49,3 +49,4 @@ start().catch((error) => {
   logger.error({ err: error }, 'startup_failed');
   process.exit(1);
 });
+

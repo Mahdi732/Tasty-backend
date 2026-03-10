@@ -9,3 +9,4 @@ export const requireRole = (...allowedRoles) => (req, _res, next) => {
   }
   return next();
 };
+

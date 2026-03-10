@@ -38,3 +38,4 @@ export class UserRepository {
     return this.userModel.deleteMany({ _id: { $in: ids } });
   }
 }
+

@@ -8,3 +8,4 @@ export class AuthMetaController {
     return res.status(200).json(jwks);
   };
 }
+

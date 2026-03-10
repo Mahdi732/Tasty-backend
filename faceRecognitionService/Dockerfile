@@ -1,11 +1,15 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /app/faceRecognitionService
 
-COPY package*.json ./
+COPY faceRecognitionService/package*.json ./
 RUN npm install --omit=dev
 
-COPY . .
+WORKDIR /app
+COPY common ./common
+COPY faceRecognitionService ./faceRecognitionService
+
+WORKDIR /app/faceRecognitionService
 
 EXPOSE 4030
 

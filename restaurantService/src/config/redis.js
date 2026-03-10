@@ -5,3 +5,4 @@ export const createRedis = async (url) => {
   await client.connect();
   return client;
 };
+

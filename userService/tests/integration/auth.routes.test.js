@@ -76,3 +76,4 @@ describe('Auth routes', () => {
     expect(profileRes.body.data.status).toBe('PENDING_FACE_ACTIVATION');
   });
 });
+

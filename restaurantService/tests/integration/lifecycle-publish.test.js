@@ -64,3 +64,4 @@ describe('Lifecycle request publish', () => {
     expect(activeRes.body.data.activationBlockers).toHaveLength(0);
   });
 });
+

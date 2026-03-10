@@ -18,3 +18,4 @@ export const buildRoutes = (deps) => {
 
   return router;
 };
+

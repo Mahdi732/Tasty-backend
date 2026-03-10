@@ -21,3 +21,4 @@ menuCategorySchema.index({ restaurantId: 1, sortOrder: 1 });
 menuCategorySchema.index({ restaurantId: 1, name: 1 });
 
 export const MenuCategoryModel = mongoose.model('MenuCategory', menuCategorySchema);
+

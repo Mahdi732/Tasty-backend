@@ -17,3 +17,4 @@ export const buildCorsOptions = (allowedOrigins) => ({
   methods: ['GET', 'POST', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
 });
+

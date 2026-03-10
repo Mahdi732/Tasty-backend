@@ -43,3 +43,4 @@ export const activateAccountSchema = z.object({
   imageBase64: z.string().min(20),
   idCardImageBase64: z.string().min(20),
 });
+

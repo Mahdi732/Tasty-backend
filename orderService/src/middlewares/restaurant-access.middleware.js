@@ -21,3 +21,4 @@ export const requireRestaurantAccess = ({ membershipRepository, restaurantIdExtr
     return next(error);
   }
 };
+

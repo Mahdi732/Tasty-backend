@@ -7,3 +7,4 @@ export class AuditService {
     this.logger.info({ event, ...payload }, 'security_audit_event');
   }
 }
+

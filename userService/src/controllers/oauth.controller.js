@@ -77,3 +77,4 @@ export class OAuthController {
     return ok(res, result);
   };
 }
+

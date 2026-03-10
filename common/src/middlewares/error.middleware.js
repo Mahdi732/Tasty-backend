@@ -18,3 +18,4 @@ export const createErrorMiddleware = ({ logger, ApiError, fail, internalErrorCod
     isApiError ? err.meta : undefined
   );
 };
+

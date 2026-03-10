@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ORDER_STATUS, ORDER_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/order.js';
+import { DEBT_STATUS, ORDER_STATUS, ORDER_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/order.js';
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -53,6 +53,24 @@ const paymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const debtSchema = new mongoose.Schema(
+  {
+    status: { type: String, enum: Object.values(DEBT_STATUS), default: DEBT_STATUS.NONE, index: true },
+    amount: { type: Number, default: 0 },
+    recordedAt: { type: Date, default: null },
+    clearedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
+const riskFlagsSchema = new mongoose.Schema(
+  {
+    qrExpiredBlacklistTriggered: { type: Boolean, default: false, index: true },
+    temporaryReview: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const immutableSnapshotSchema = new mongoose.Schema(
   {
     restaurant: {
@@ -89,6 +107,8 @@ const orderSchema = new mongoose.Schema(
     immutableSnapshot: { type: immutableSnapshotSchema, required: true },
     fulfillment: { type: fulfillmentSchema, required: true },
     payment: { type: paymentSchema, default: {} },
+    debt: { type: debtSchema, default: {} },
+    riskFlags: { type: riskFlagsSchema, default: {} },
     totals: {
       subtotal: { type: Number, required: true },
       tax: { type: Number, default: 0 },
@@ -105,3 +125,4 @@ orderSchema.index({ restaurantId: 1, createdAt: -1 });
 orderSchema.index({ userId: 1, createdAt: -1 });
 
 export const OrderModel = mongoose.model('Order', orderSchema);
+

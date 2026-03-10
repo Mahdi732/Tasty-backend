@@ -10,3 +10,4 @@ export const buildHelmetOptions = (isProduction) => ({
   crossOriginEmbedderPolicy: false,
   referrerPolicy: { policy: 'no-referrer' },
 });
+

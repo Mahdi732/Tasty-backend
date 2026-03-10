@@ -19,3 +19,4 @@ export class OrderRepository {
     return this.model.find({}).sort({ createdAt: -1 }).lean();
   }
 }
+

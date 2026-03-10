@@ -1,7 +1,7 @@
 import { ApiError } from '../utils/api-error.js';
 import { fail } from '../utils/api-response.js';
 import { ERROR_CODES } from '../constants/errors.js';
-import { createErrorMiddleware } from '../../../../common/src/middlewares/error.middleware.js';
+import { createErrorMiddleware } from '../../../common/src/middlewares/error.middleware.js';
 
 export const errorMiddleware = (logger) => createErrorMiddleware({
   logger,
@@ -9,3 +9,4 @@ export const errorMiddleware = (logger) => createErrorMiddleware({
   fail,
   internalErrorCode: ERROR_CODES.INTERNAL_ERROR,
 });
+

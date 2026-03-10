@@ -6,3 +6,4 @@ export const hmacSha256 = (secret, input) =>
   crypto.createHmac('sha256', secret).update(input).digest('hex');
 
 export const randomUrlSafe = (bytes = 48) => crypto.randomBytes(bytes).toString('base64url');
+

@@ -10,3 +10,4 @@ const processedEventSchema = new mongoose.Schema(
 );
 
 export const ProcessedEventModel = mongoose.model('ProcessedEvent', processedEventSchema);
+

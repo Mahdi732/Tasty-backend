@@ -1,6 +1,8 @@
 services:
   restaurant-menu-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: restaurantService/Dockerfile
     container_name: tasty-restaurant-menu-service
     ports:
       - "4010:4010"

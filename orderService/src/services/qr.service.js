@@ -30,3 +30,4 @@ export class QrService {
     return { valid: true, payload };
   }
 }
+

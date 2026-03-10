@@ -25,3 +25,4 @@ refreshSessionSchema.index({ userId: 1, revokedAt: 1, expiresAt: 1 });
 refreshSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const RefreshSessionModel = mongoose.model('RefreshSession', refreshSessionSchema);
+

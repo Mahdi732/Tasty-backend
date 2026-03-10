@@ -9,3 +9,4 @@ export const OAUTH_PROVIDERS = Object.freeze({
   GOOGLE: 'google',
   FACEBOOK: 'facebook',
 });
+

@@ -24,4 +24,10 @@ export class FaceController {
     const result = await this.faceService.verify(req.body, { requestId: req.requestId });
     return ok(res, result);
   };
+
+  blacklistByRef = async (req, res) => {
+    const result = await this.faceService.blacklistByRef(req.body, { requestId: req.requestId });
+    return ok(res, result);
+  };
 }
+

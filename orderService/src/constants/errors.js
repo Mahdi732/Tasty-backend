@@ -7,3 +7,4 @@ export const ERROR_CODES = Object.freeze({
   CONFLICT: 'CONFLICT',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 });
+

@@ -126,4 +126,31 @@ export class VectorRepository {
   createEvent(payload) {
     return FaceEventModel.create(payload);
   }
+
+  async markPersonAsDebtor({ tenantId, personRef, reason }) {
+    const identity = await FaceIdentityModel.findOneAndUpdate(
+      { tenantId, personRef },
+      {
+        $set: {
+          listType: 'DEBTOR',
+          reason: reason || 'AUTO_QR_EXPIRED_DEBT',
+          active: true,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await FaceVectorModel.updateMany(
+      { tenantId, personRef },
+      {
+        $set: {
+          listType: 'DEBTOR',
+          active: true,
+        },
+      }
+    );
+
+    return identity;
+  }
 }
+

@@ -48,3 +48,4 @@ describe('Refresh rotation', () => {
     expect([200, 401, 409]).toContain(rotate2.status);
   });
 });
+

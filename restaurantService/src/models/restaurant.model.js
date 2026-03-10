@@ -147,3 +147,4 @@ restaurantSchema.index({ 'location.geo': '2dsphere' });
 restaurantSchema.index({ name: 'text', description: 'text' });
 
 export const RestaurantModel = mongoose.model('Restaurant', restaurantSchema);
+

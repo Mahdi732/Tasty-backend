@@ -14,3 +14,4 @@ export const createOrderSchema = z.object({
 export const restaurantOrdersParamSchema = z.object({
   restaurantId: z.string().min(1),
 });
+

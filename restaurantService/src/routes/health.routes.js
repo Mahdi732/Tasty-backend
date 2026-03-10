@@ -7,3 +7,4 @@ export const buildHealthRoutes = (healthController) => {
   router.get('/ready', asyncHandler(healthController.ready));
   return router;
 };
+

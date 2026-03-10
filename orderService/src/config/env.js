@@ -26,6 +26,12 @@ const envSchema = z.object({
 
   QR_SIGNING_SECRET: z.string().min(8),
   QR_TTL_SECONDS: z.coerce.number().int().positive().default(10800),
+  FACE_SERVICE_BASE_URL: z.string().url().default('http://localhost:4030'),
+  FACE_SERVICE_API_KEY: z.string().min(8).default('change-me-key'),
+  FACE_SERVICE_TENANT_ID: z.string().min(1).default('global'),
+  FACE_SERVICE_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  QR_EXPIRY_SCAN_CRON: z.string().default('*/5 * * * *'),
+  QR_EXPIRY_SCAN_BATCH_SIZE: z.coerce.number().int().positive().default(200),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -37,3 +43,4 @@ export const env = {
   ...parsed.data,
   CORS_ORIGINS_LIST: parsed.data.CORS_ORIGINS.split(',').map((origin) => origin.trim()),
 };
+

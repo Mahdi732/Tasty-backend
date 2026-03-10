@@ -9,3 +9,4 @@ export const buildHealthRoutes = ({ healthController }) => {
 
   return router;
 };
+

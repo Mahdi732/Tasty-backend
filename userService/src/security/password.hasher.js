@@ -15,3 +15,4 @@ export class PasswordHasher {
     return argon2.verify(hash, plainPassword);
   }
 }
+

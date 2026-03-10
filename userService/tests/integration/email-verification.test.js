@@ -101,3 +101,4 @@ describe('Email verification flow', () => {
     expect(resend.body.error.code).toBe('AUTH_VERIFICATION_COOLDOWN');
   });
 });
+

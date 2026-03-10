@@ -23,6 +23,8 @@ import { RestaurantMembershipRepository } from './repositories/restaurant-member
 import { ProcessedEventRepository } from './repositories/processed-event.repository.js';
 
 import { QrService } from './services/qr.service.js';
+import { FaceBlacklistClient } from './services/face-blacklist.client.js';
+import { PaymentSkeletonService } from './services/payment-skeleton.service.js';
 import { OrderService } from './services/order.service.js';
 
 import { HealthController } from './controllers/health.controller.js';
@@ -48,12 +50,24 @@ export const createContainer = async () => {
     ttlSeconds: env.QR_TTL_SECONDS,
   });
 
+  const faceBlacklistClient = new FaceBlacklistClient({
+    baseUrl: env.FACE_SERVICE_BASE_URL,
+    apiKey: env.FACE_SERVICE_API_KEY,
+    tenantId: env.FACE_SERVICE_TENANT_ID,
+    timeoutMs: env.FACE_SERVICE_TIMEOUT_MS,
+    logger,
+  });
+
+  const paymentSkeletonService = new PaymentSkeletonService({ rabbitBus });
+
   const orderService = new OrderService({
     orderRepository,
     membershipRepository,
     processedEventRepository,
     qrService,
     rabbitBus,
+    paymentSkeletonService,
+    faceBlacklistClient,
     logger,
   });
 
@@ -119,3 +133,4 @@ export const buildApp = async ({ container } = {}) => {
 
   return app;
 };
+

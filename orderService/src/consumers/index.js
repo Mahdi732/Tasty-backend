@@ -25,3 +25,4 @@ export const registerConsumers = async ({
     logger,
   });
 };
+

@@ -1,9 +1,9 @@
-export const createJwtAuthMiddleware = ({ verifyAccessToken, onAuthenticated }) => async (req, _res, next) => {
+export const createJwtAuthMiddleware = ({ verifyAccessToken, onAuthenticated, buildUnauthorizedError }) => async (req, _res, next) => {
   try {
     const authHeader = req.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!token) {
-      return next(new Error('AUTH_TOKEN_MISSING'));
+      return next(buildUnauthorizedError ? buildUnauthorizedError() : new Error('AUTH_TOKEN_MISSING'));
     }
 
     const payload = await verifyAccessToken(token);
@@ -34,3 +34,4 @@ export const createApiKeyAuthMiddleware = ({ ApiError, unauthorizedCode, apiKey 
   }
   return next();
 };
+

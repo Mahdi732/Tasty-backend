@@ -33,3 +33,12 @@ process.env.REFRESH_RATE_LIMIT_MAX = '1000';
 
 process.env.OAUTH_STATE_TTL_SECONDS = '600';
 process.env.ALLOW_AUTO_LINK_VERIFIED_OAUTH_EMAIL = 'false';
+
+process.env.FACE_SERVICE_BASE_URL = 'http://localhost:4030';
+process.env.FACE_SERVICE_API_KEY = 'change-me-key';
+process.env.FACE_SERVICE_TIMEOUT_MS = '8000';
+process.env.FACE_SERVICE_TENANT_ID = 'global';
+process.env.FACE_SERVICE_SEARCH_THRESHOLD = '0.62';
+process.env.ID_CARD_ENCRYPTION_KEY = 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=';
+process.env.ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS = '10';
+

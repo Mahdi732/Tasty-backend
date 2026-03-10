@@ -174,4 +174,33 @@ export class FaceService {
 
     return result;
   }
+
+  async blacklistByRef(payload, context) {
+    const startedAt = Date.now();
+    const identity = await this.vectorRepository.markPersonAsDebtor({
+      tenantId: payload.tenantId,
+      personRef: payload.personRef,
+      reason: payload.reason,
+    });
+
+    const result = {
+      blacklisted: true,
+      tenantId: payload.tenantId,
+      personRef: payload.personRef,
+      listType: 'DEBTOR',
+      identityId: String(identity._id),
+    };
+
+    await this.vectorRepository.createEvent({
+      requestId: context.requestId,
+      eventType: 'FACE_BLACKLISTED',
+      tenantId: payload.tenantId,
+      personRef: payload.personRef,
+      result,
+      latencyMs: Date.now() - startedAt,
+    });
+
+    return result;
+  }
 }
+

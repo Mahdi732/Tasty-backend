@@ -142,3 +142,4 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride, domainEven
 
   return app;
 };
+

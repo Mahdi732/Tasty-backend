@@ -37,3 +37,4 @@ export const env = {
   ...parsed.data,
   CORS_ORIGINS_LIST: parsed.data.CORS_ORIGINS.split(',').map((origin) => origin.trim()),
 };
+

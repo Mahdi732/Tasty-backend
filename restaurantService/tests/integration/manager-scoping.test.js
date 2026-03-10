@@ -95,3 +95,4 @@ describe('Manager restaurant scoping', () => {
       .expect(200);
   });
 });
+

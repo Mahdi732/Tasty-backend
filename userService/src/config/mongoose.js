@@ -7,3 +7,4 @@ export const connectMongo = async (mongoUri) => {
     serverSelectionTimeoutMS: 5000,
   });
 };
+

@@ -26,4 +26,16 @@ export class OrderRepository {
   updateById(id, payload) {
     return this.model.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
   }
+
+  findExpiredUnscanned(now, limit = 200) {
+    return this.model
+      .find({
+        'qr.expiresAt': { $lt: now },
+        'qr.scannedAt': null,
+        orderStatus: { $nin: ['EXPIRED', 'COMPLETED', 'CANCELLED'] },
+      })
+      .limit(limit)
+      .lean();
+  }
 }
+

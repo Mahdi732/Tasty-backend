@@ -1,7 +1,8 @@
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 export const createRequestIdMiddleware = () => (req, res, next) => {
-  req.requestId = req.get('x-request-id') || uuidv4();
+  req.requestId = req.get('x-request-id') || crypto.randomUUID();
   res.setHeader('x-request-id', req.requestId);
   next();
 };
+

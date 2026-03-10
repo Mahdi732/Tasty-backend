@@ -20,3 +20,4 @@ oauthAccountSchema.index({ userId: 1, provider: 1 }, { unique: true });
 oauthAccountSchema.index({ providerEmail: 1 });
 
 export const OAuthAccountModel = mongoose.model('OAuthAccount', oauthAccountSchema);
+

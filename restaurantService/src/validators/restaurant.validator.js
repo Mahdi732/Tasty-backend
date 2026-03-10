@@ -107,3 +107,4 @@ export const subscriptionUpdateSchema = z.object({
   currentPeriodEnd: z.string().datetime().nullable().optional(),
   cancelAtPeriodEnd: z.boolean().optional(),
 });
+

@@ -6,3 +6,4 @@ export const USER_STATUS = Object.freeze({
 });
 
 export const USER_STATUS_LIST = Object.freeze(Object.values(USER_STATUS));
+

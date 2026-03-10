@@ -1,11 +1,15 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /app/restaurantService
 
-COPY package*.json ./
+COPY restaurantService/package*.json ./
 RUN npm install
 
-COPY . .
+WORKDIR /app
+COPY common ./common
+COPY restaurantService ./restaurantService
+
+WORKDIR /app/restaurantService
 
 EXPOSE 4010
 CMD ["npm", "start"]

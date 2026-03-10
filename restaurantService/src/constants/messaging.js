@@ -6,3 +6,4 @@ export const EVENTS = Object.freeze({
   RESTORE_FEE_PAYMENT_REQUESTED: 'restaurant.restore.fee.payment.requested',
   INVENTORY_CHECK: 'inventory.check',
 });
+

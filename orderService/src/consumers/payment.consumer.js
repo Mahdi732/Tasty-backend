@@ -10,3 +10,4 @@ export const registerPaymentConsumer = async ({ rabbitBus, orderService, queueNa
     },
   });
 };
+

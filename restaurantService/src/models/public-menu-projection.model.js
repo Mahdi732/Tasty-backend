@@ -31,3 +31,4 @@ export const PublicMenuProjectionModel = mongoose.model(
   'PublicMenuProjection',
   publicMenuProjectionSchema
 );
+

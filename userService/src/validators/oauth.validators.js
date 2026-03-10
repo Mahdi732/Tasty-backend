@@ -17,3 +17,4 @@ export const oauthCallbackQuerySchema = z.object({
 export const oauthLinkBodySchema = z.object({
   platform: platformSchema.default('web'),
 });
+

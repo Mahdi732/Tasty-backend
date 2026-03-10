@@ -3,3 +3,4 @@ export class EmailSender {
     throw new Error('sendVerificationOtp must be implemented');
   }
 }
+

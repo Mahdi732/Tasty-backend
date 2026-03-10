@@ -20,3 +20,4 @@ const optionItemSchema = new mongoose.Schema(
 optionItemSchema.index({ optionGroupId: 1, sortOrder: 1 });
 
 export const OptionItemModel = mongoose.model('OptionItem', optionItemSchema);
+

@@ -18,3 +18,4 @@ const faceVectorSchema = new mongoose.Schema(
 faceVectorSchema.index({ tenantId: 1, listType: 1, active: 1 });
 
 export const FaceVectorModel = mongoose.model('FaceVector', faceVectorSchema);
+

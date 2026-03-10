@@ -1,16 +1,18 @@
 import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 import { EVENTS } from '../constants/messaging.js';
-import { ORDER_STATUS, ORDER_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/order.js';
+import { DEBT_STATUS, ORDER_STATUS, ORDER_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/order.js';
 import { ROLES } from '../constants/roles.js';
 
 export class OrderService {
-  constructor({ orderRepository, membershipRepository, processedEventRepository, qrService, rabbitBus, logger }) {
+  constructor({ orderRepository, membershipRepository, processedEventRepository, qrService, rabbitBus, paymentSkeletonService, faceBlacklistClient, logger }) {
     this.orderRepository = orderRepository;
     this.membershipRepository = membershipRepository;
     this.processedEventRepository = processedEventRepository;
     this.qrService = qrService;
     this.rabbitBus = rabbitBus;
+    this.paymentSkeletonService = paymentSkeletonService;
+    this.faceBlacklistClient = faceBlacklistClient;
     this.logger = logger;
   }
 
@@ -124,6 +126,14 @@ export class OrderService {
         status: initialState.paymentStatus,
         resourceType: 'ORDER',
       },
+      debt: {
+        status: DEBT_STATUS.NONE,
+        amount: 0,
+      },
+      riskFlags: {
+        qrExpiredBlacklistTriggered: false,
+        temporaryReview: false,
+      },
       qr: {
         tokenHash: qr.tokenHash,
         expiresAt: qr.expiresAt,
@@ -154,7 +164,7 @@ export class OrderService {
       expiresAt: finalQr.expiresAt.toISOString(),
     }, headers);
 
-    await this.rabbitBus.publishEvent(EVENTS.PAYMENT_VERIFY, {
+    await this.paymentSkeletonService.requestVerification({
       orderId: String(updated._id),
       userId: updated.userId,
       restaurantId: updated.restaurantId,
@@ -230,6 +240,16 @@ export class OrderService {
       'qr.scannedBy': auth.userId,
       orderStatus: outcome.orderStatus,
       'payment.status': outcome.paymentStatus,
+      debt: {
+        status: DEBT_STATUS.CLEARED,
+        amount: 0,
+        recordedAt: order.debt?.recordedAt || null,
+        clearedAt: new Date(),
+      },
+      riskFlags: {
+        qrExpiredBlacklistTriggered: false,
+        temporaryReview: false,
+      },
     });
 
     await this.rabbitBus.publishEvent('order.qr.scanned', {
@@ -273,7 +293,7 @@ export class OrderService {
 
     await this.processedEventRepository.markProcessed(headers.eventId, 'payment.succeeded');
 
-    await this.rabbitBus.publishEvent(EVENTS.ORDER_PAYMENT_STATUS_CHANGED, {
+    await this.paymentSkeletonService.emitStatusChanged({
       orderId: String(updated._id),
       paymentStatus: PAYMENT_STATUS.PAID,
     }, headers);
@@ -285,4 +305,46 @@ export class OrderService {
       total: updated.totals.total,
     }, headers);
   }
+
+  async processExpiredQrOrders({ limit = 200 } = {}) {
+    const now = new Date();
+    const expiredOrders = await this.orderRepository.findExpiredUnscanned(now, limit);
+    let processed = 0;
+
+    for (const order of expiredOrders) {
+      const updated = await this.orderRepository.updateById(order._id, {
+        orderStatus: ORDER_STATUS.EXPIRED,
+        debt: {
+          status: DEBT_STATUS.OUTSTANDING,
+          amount: order.totals?.total || 0,
+          recordedAt: now,
+          clearedAt: null,
+        },
+        riskFlags: {
+          qrExpiredBlacklistTriggered: true,
+          temporaryReview: true,
+        },
+      });
+
+      if (this.faceBlacklistClient) {
+        await this.faceBlacklistClient.addDebtor({
+          userId: updated.userId,
+          debtAmount: updated.totals?.total || 0,
+          requestId: `qr-expire-${String(updated._id)}`,
+        });
+      }
+
+      await this.rabbitBus.publishEvent('order.qr.expired', {
+        orderId: String(updated._id),
+        userId: updated.userId,
+        restaurantId: updated.restaurantId,
+        debtAmount: updated.totals?.total || 0,
+      });
+
+      processed += 1;
+    }
+
+    return { processed };
+  }
 }
+

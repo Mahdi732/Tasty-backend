@@ -74,3 +74,4 @@ export class RestaurantRepository {
     return this.updateById(id, { deletedAt: new Date() });
   }
 }
+

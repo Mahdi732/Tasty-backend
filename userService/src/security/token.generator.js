@@ -18,3 +18,4 @@ export class TokenGenerator {
     return `${sessionId}.${secret}`;
   }
 }
+

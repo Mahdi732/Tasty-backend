@@ -20,3 +20,4 @@ export class RestaurantMembershipRepository {
     return this.model.findOneAndDelete({ userId: payload.userId, restaurantId: String(payload.restaurantId) });
   }
 }
+

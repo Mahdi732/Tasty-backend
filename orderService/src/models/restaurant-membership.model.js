@@ -12,3 +12,4 @@ const restaurantMembershipSchema = new mongoose.Schema(
 restaurantMembershipSchema.index({ userId: 1, restaurantId: 1 }, { unique: true });
 
 export const RestaurantMembershipModel = mongoose.model('RestaurantMembership', restaurantMembershipSchema);
+

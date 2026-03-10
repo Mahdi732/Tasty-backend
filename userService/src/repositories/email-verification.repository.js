@@ -57,3 +57,4 @@ export class EmailVerificationRepository {
     return this.model.findByIdAndUpdate(id, { consumedAt: new Date() }, { new: true });
   }
 }
+

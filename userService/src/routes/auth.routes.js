@@ -32,3 +32,4 @@ export const buildAuthRoutes = ({ authController, authMiddleware, loginLimiter, 
 
   return router;
 };
+

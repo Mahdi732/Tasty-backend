@@ -12,6 +12,7 @@ export const PAYMENT_METHOD = Object.freeze({
 export const ORDER_STATUS = Object.freeze({
   CREATED: 'CREATED',
   PAID: 'PAID',
+  EXPIRED: 'EXPIRED',
   DELIVERED: 'DELIVERED',
   OBTAINED: 'OBTAINED',
   FINISHED: 'FINISHED',
@@ -27,3 +28,10 @@ export const PAYMENT_STATUS = Object.freeze({
   FAILED: 'FAILED',
   REFUNDED: 'REFUNDED',
 });
+
+export const DEBT_STATUS = Object.freeze({
+  NONE: 'NONE',
+  OUTSTANDING: 'OUTSTANDING',
+  CLEARED: 'CLEARED',
+});
+

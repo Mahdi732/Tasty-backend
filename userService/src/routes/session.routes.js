@@ -16,3 +16,4 @@ export const buildSessionRoutes = ({ sessionController, authMiddleware }) => {
 
   return router;
 };
+

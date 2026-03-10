@@ -1,7 +1,7 @@
 import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 import { USER_STATUS } from '../constants/user-status.js';
-import { createJwtAuthMiddleware } from '../../../../common/src/middlewares/auth.middleware.js';
+import { createJwtAuthMiddleware } from '../../../common/src/middlewares/auth.middleware.js';
 
 const canAccessWhilePendingActivation = (method, path) => {
   if (method === 'POST' && path === '/activate-account') return true;
@@ -11,6 +11,8 @@ const canAccessWhilePendingActivation = (method, path) => {
 
 export const authMiddleware = (jwtVerifier, userRepository) => async (req, _res, next) => {
   createJwtAuthMiddleware({
+    buildUnauthorizedError: () =>
+      new ApiError(401, ERROR_CODES.AUTH_UNAUTHORIZED, 'Authentication required'),
     verifyAccessToken: async (token) => {
       try {
         return await jwtVerifier.verifyAccessToken(token);
@@ -44,3 +46,4 @@ export const authMiddleware = (jwtVerifier, userRepository) => async (req, _res,
     },
   })(req, _res, next);
 };
+

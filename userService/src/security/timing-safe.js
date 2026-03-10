@@ -8,3 +8,4 @@ export const timingSafeEqualHex = (aHex, bHex) => {
   const b = Buffer.from(bHex, 'hex');
   return crypto.timingSafeEqual(a, b);
 };
+

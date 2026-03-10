@@ -21,3 +21,4 @@ emailVerificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 emailVerificationSchema.index({ identifierHash: 1, purpose: 1, consumedAt: 1 });
 
 export const EmailVerificationModel = mongoose.model('EmailVerification', emailVerificationSchema);
+

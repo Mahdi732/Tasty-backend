@@ -28,3 +28,10 @@ export const compareIdWithFaceSchema = z.object({
   liveImageBase64: z.string().min(20),
   tenantId: z.string().min(1),
 });
+
+export const blacklistByRefSchema = z.object({
+  tenantId: z.string().min(1),
+  personRef: z.string().min(1),
+  reason: z.string().optional(),
+});
+

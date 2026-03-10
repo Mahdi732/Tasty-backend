@@ -7,3 +7,4 @@ export default {
   transform: {},
   collectCoverageFrom: ['src/**/*.js', '!src/server.js'],
 };
+

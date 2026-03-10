@@ -145,3 +145,4 @@ export class AuthController {
     return ok(res, result, 501);
   };
 }
+

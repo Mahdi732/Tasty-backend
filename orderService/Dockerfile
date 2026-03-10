@@ -1,11 +1,15 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /app/orderService
 
-COPY package*.json ./
+COPY orderService/package*.json ./
 RUN npm install
 
-COPY . .
+WORKDIR /app
+COPY common ./common
+COPY orderService ./orderService
+
+WORKDIR /app/orderService
 
 EXPOSE 4020
 CMD ["npm", "start"]

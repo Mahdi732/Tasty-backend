@@ -18,3 +18,4 @@ export class MemoryEmailSender {
     return null;
   }
 }
+

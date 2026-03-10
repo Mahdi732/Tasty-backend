@@ -230,3 +230,4 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
 
   return app;
 };
+

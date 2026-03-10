@@ -45,3 +45,4 @@ export class RestaurantController {
     return ok(res, result, 202);
   };
 }
+

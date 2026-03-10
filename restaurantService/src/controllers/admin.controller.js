@@ -57,3 +57,4 @@ export class AdminController {
     return ok(res, restaurant);
   };
 }
+

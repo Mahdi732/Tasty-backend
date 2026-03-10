@@ -136,3 +136,4 @@ export class ProjectionService {
     await this.redisClient.del(this.cacheKey(citySlug, slug));
   }
 }
+

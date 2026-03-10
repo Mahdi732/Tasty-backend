@@ -8,3 +8,4 @@ const { privateKey, publicKey } = generateKeyPairSync('rsa', {
 
 console.log('JWT_PRIVATE_KEY="' + privateKey.replace(/\n/g, '\\n') + '"');
 console.log('JWT_PUBLIC_KEY="' + publicKey.replace(/\n/g, '\\n') + '"');
+

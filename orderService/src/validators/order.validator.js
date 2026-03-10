@@ -31,3 +31,4 @@ export const createOrderSchema = z.object({
 export const restaurantOrdersParamSchema = z.object({ restaurantId: z.string().min(1) });
 
 export const scanQrSchema = z.object({ qrToken: z.string().min(20) });
+

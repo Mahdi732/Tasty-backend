@@ -93,3 +93,4 @@ describe('Public menu visibility', () => {
     expect(firstCategory.items[0].name).toBe('Visible Burger');
   });
 });
+

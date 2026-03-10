@@ -12,3 +12,4 @@ export const httpLogger = pinoHttp({
   logger,
   customProps: (req) => ({ requestId: req.requestId }),
 });
+

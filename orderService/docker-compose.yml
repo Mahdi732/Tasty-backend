@@ -1,6 +1,8 @@
 services:
   order-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: orderService/Dockerfile
     container_name: tasty-order-service
     ports:
       - "4020:4020"

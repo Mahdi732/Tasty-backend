@@ -29,3 +29,4 @@ export class MenuCategoryRepository {
     return this.updateById(id, { deletedAt: new Date(), isActive: false });
   }
 }
+

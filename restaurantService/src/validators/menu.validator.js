@@ -65,3 +65,4 @@ export const availabilitySchema = z.object({
 export const publishSchema = z.object({
   isPublished: z.boolean(),
 });
+

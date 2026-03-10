@@ -21,3 +21,4 @@ const faceIdentitySchema = new mongoose.Schema(
 faceIdentitySchema.index({ tenantId: 1, personRef: 1 }, { unique: true });
 
 export const FaceIdentityModel = mongoose.model('FaceIdentity', faceIdentitySchema);
+

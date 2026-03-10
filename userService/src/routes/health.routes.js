@@ -6,3 +6,4 @@ export const buildHealthRoutes = (healthController) => {
   router.get('/health', asyncHandler(healthController.live.bind(healthController)));
   return router;
 };
+

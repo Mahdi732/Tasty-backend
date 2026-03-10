@@ -5,3 +5,4 @@ export class HealthController {
     return ok(res, { status: 'ok' });
   }
 }
+

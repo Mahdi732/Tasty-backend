@@ -243,3 +243,4 @@ export const env = {
   OAUTH_PLATFORMS: OAUTH_PLATFORMS,
   CORS_ORIGINS_LIST: parsed.data.CORS_ORIGINS.split(',').map((origin) => origin.trim()),
 };
+

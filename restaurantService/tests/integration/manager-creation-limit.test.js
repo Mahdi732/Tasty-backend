@@ -34,3 +34,4 @@ describe('Manager creation limitation', () => {
     expect(second.body.error.code).toBe('CONFLICT');
   });
 });
+

@@ -1,7 +1,9 @@
 version: '3.9'
 services:
   auth-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: userService/Dockerfile
     container_name: tasty-auth-service
     ports:
       - "4000:4000"

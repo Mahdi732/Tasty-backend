@@ -13,3 +13,4 @@ const faceEventSchema = new mongoose.Schema(
 );
 
 export const FaceEventModel = mongoose.model('FaceEvent', faceEventSchema);
+

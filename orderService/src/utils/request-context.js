@@ -6,3 +6,4 @@ export const buildEventHeaders = (req = {}) => ({
   causationId: req.requestId || null,
   occurredAt: new Date().toISOString(),
 });
+

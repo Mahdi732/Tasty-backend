@@ -5,3 +5,4 @@ export class NoopEmailSender extends EmailSender {
     return { accepted: true };
   }
 }
+

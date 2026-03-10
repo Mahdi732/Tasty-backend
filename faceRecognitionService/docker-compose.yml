@@ -1,6 +1,8 @@
 services:
   face-recognition-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: faceRecognitionService/Dockerfile
     container_name: tasty-face-recognition-service
     ports:
       - "4030:4030"

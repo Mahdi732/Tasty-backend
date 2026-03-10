@@ -21,3 +21,4 @@ export const buildPublicRoutes = (publicController) => {
 
   return router;
 };
+

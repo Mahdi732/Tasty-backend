@@ -5,3 +5,4 @@ export default {
   transform: {},
   collectCoverageFrom: ['src/**/*.js'],
 };
+

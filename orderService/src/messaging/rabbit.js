@@ -53,3 +53,4 @@ export class RabbitBus {
     if (this.connection) await this.connection.close();
   }
 }
+

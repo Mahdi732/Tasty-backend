@@ -32,3 +32,4 @@ export class DomainEventPublisher {
     if (this.connection) await this.connection.close();
   }
 }
+
