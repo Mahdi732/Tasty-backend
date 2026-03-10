@@ -1,8 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
+import { createRequestIdMiddleware } from '../../../../common/src/middlewares/request-id.middleware.js';
 
-export const requestIdMiddleware = (req, res, next) => {
-  const requestId = req.get('x-request-id') || uuidv4();
-  req.requestId = requestId;
-  res.set('x-request-id', requestId);
-  next();
-};
+export const requestIdMiddleware = createRequestIdMiddleware();
