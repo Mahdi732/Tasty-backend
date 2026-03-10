@@ -10,6 +10,11 @@ export class FaceController {
     return ok(res, result, 201);
   };
 
+  compareIdWithFace = async (req, res) => {
+    const result = await this.faceService.compareIdWithFace(req.body, { requestId: req.requestId });
+    return ok(res, result);
+  };
+
   search = async (req, res) => {
     const result = await this.faceService.search(req.body, { requestId: req.requestId });
     return ok(res, result);
