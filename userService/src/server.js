@@ -3,13 +3,14 @@ import { env, logger, connectMongo, createRedisClient } from './config/index.js'
 
 let redisClient;
 let server;
+let appInstance;
 
 const start = async () => {
   await connectMongo(env.MONGO_URI);
   redisClient = await createRedisClient(env.REDIS_URL);
 
-  const app = await buildApp({ redisClient });
-  server = app.listen(env.PORT, () => {
+  appInstance = await buildApp({ redisClient });
+  server = appInstance.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, 'auth_service_started');
   });
 };
@@ -22,6 +23,17 @@ const shutdown = async (signal) => {
   if (redisClient) {
     await redisClient.quit();
   }
+
+  const cleanupJob = appInstance?.locals?.pendingFaceActivationCleanupJob;
+  if (cleanupJob) {
+    cleanupJob.stop();
+  }
+
+  const domainEventPublisher = appInstance?.locals?.domainEventPublisher;
+  if (domainEventPublisher) {
+    await domainEventPublisher.close();
+  }
+
   process.exit(0);
 };
 
