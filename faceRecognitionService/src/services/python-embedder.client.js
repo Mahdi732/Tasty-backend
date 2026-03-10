@@ -56,4 +56,46 @@ export class PythonEmbedderClient {
     }
     return response.json();
   }
+
+  async compareIdWithFace(idCardBuffer, liveImageBuffer) {
+    const form = new FormData();
+    form.append('id_card_file', new Blob([idCardBuffer], { type: 'application/octet-stream' }), 'id-card.jpg');
+    form.append('live_file', new Blob([liveImageBuffer], { type: 'application/octet-stream' }), 'live-face.jpg');
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/compare-id`, {
+        method: 'POST',
+        body: form,
+        signal: controller.signal,
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new ApiError(
+          502,
+          ERROR_CODES.EMBEDDING_PROVIDER_FAILED,
+          'ID-face compare provider returned an error response',
+          data
+        );
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      throw new ApiError(
+        502,
+        ERROR_CODES.EMBEDDING_PROVIDER_FAILED,
+        'ID-face compare provider request failed',
+        String(error)
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
 }
