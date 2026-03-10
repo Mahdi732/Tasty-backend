@@ -30,6 +30,7 @@ import { SessionService } from './services/session.service.js';
 import { AuthService } from './services/auth.service.js';
 import { UserService } from './services/user.service.js';
 import { FaceRecognitionClient } from './services/face-recognition.client.js';
+import { IdCardVaultService } from './services/id-card-vault.service.js';
 import { EmailVerificationService } from './services/email-verification.service.js';
 import { NodemailerEmailSender } from './services/email/nodemailer-email.sender.js';
 import { NoopEmailSender } from './services/email/noop-email.sender.js';
@@ -121,6 +122,10 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
     logger,
   });
 
+  const idCardVaultService = new IdCardVaultService({
+    encryptionKey: env.ID_CARD_ENCRYPTION_KEY,
+  });
+
   const domainEventPublisher = new DomainEventPublisher({
     url: env.RABBITMQ_URL,
     exchange: env.RABBITMQ_EVENTS_EXCHANGE,
@@ -130,6 +135,7 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
   const userService = new UserService({
     userRepository,
     faceRecognitionClient,
+    idCardVaultService,
     env,
     auditService,
   });
