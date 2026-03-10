@@ -108,6 +108,20 @@ export class AuthController {
     return ok(res, profile);
   };
 
+  profile = async (req, res) => {
+    const profile = await this.userService.getProfile(req.auth.userId);
+    return ok(res, profile);
+  };
+
+  activateAccount = async (req, res) => {
+    const result = await this.userService.activateAccount(req.auth.userId, req.body, {
+      requestId: req.requestId,
+      ipAddress: req.clientIp,
+      userAgent: req.userAgent,
+    });
+    return ok(res, result);
+  };
+
   startEmailVerification = async (req, res) => {
     const context = {
       ipAddress: req.clientIp,
