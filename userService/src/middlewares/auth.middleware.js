@@ -43,3 +43,4 @@ export const authMiddleware = (jwtVerifier, userRepository) => async (req, _res,
       }
     },
   })(req, _res, next);
+};
