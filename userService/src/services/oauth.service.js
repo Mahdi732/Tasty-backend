@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 import { ROLES } from '../constants/roles.js';
+import { USER_STATUS } from '../constants/user-status.js';
 
 export class OAuthService {
   constructor({
@@ -165,13 +166,21 @@ export class OAuthService {
     }
 
     if (!user) {
+      const emailVerified = Boolean(profile.emailVerified);
       user = await this.userRepository.create({
         email: profile.email || `${profile.providerUserId}@${profile.provider}.oauth.local`,
         passwordHash: null,
         roles: [ROLES.USER],
-        isEmailVerified: Boolean(profile.emailVerified),
-        emailVerifiedAt: profile.emailVerified ? new Date() : null,
-        status: 'active',
+        isEmailVerified: emailVerified,
+        emailVerifiedAt: emailVerified ? new Date() : null,
+        isFaceVerified: false,
+        faceIdentityId: null,
+        activationDeadline: emailVerified
+          ? new Date(Date.now() + this.env.ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS * 24 * 60 * 60 * 1000)
+          : null,
+        status: emailVerified
+          ? USER_STATUS.PENDING_FACE_ACTIVATION
+          : USER_STATUS.PENDING_EMAIL_VERIFICATION,
       });
     }
 
