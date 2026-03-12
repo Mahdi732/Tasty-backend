@@ -32,3 +32,12 @@ export const restaurantOrdersParamSchema = z.object({ restaurantId: z.string().m
 
 export const scanQrSchema = z.object({ qrToken: z.string().min(20) });
 
+export const orderIdParamSchema = z.object({ orderId: z.string().min(1) });
+
+export const driverArrivedSchema = z.object({
+  phoneNumber: z.string().regex(/^\+?[1-9]\d{7,14}$/).optional(),
+  pushToken: z.string().min(8).optional(),
+  idNumberMasked: z.string().min(2).optional(),
+  debtAmount: z.number().min(0).optional(),
+});
+
