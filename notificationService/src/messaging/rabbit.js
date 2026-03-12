@@ -1,4 +1,21 @@
 import amqplib from 'amqplib';
+import { v4 as uuidv4 } from 'uuid';
+import { getRequestContext, runWithRequestContext } from '../../../common/src/tracing/context.js';
+
+const buildTracingHeaders = (headers = {}) => {
+  const context = getRequestContext();
+  const correlationId = headers.correlationId || context?.correlationId || context?.requestId || uuidv4();
+  return {
+    ...headers,
+    correlationId,
+    causationId: headers.causationId || context?.requestId || null,
+  };
+};
+
+const toRequestContextFromHeaders = (headers = {}) => ({
+  requestId: headers.causationId || headers.requestId || headers.correlationId || null,
+  correlationId: headers.correlationId || headers.requestId || null,
+});
 
 export class RabbitBus {
   constructor({ url, eventsExchange, commandsExchange, prefetch, logger }) {
@@ -21,10 +38,11 @@ export class RabbitBus {
 
   async publishEvent(routingKey, payload, headers = {}) {
     const body = Buffer.from(JSON.stringify(payload));
+    const enrichedHeaders = buildTracingHeaders(headers);
     this.channel.publish(this.eventsExchange, routingKey, body, {
       contentType: 'application/json',
       deliveryMode: 2,
-      headers,
+      headers: enrichedHeaders,
       timestamp: Date.now(),
     });
   }
@@ -39,7 +57,10 @@ export class RabbitBus {
       if (!msg) return;
       try {
         const payload = JSON.parse(msg.content.toString('utf8'));
-        await onMessage(payload, { ...(msg.properties.headers || {}), routingKey: msg.fields.routingKey });
+        const headers = { ...(msg.properties.headers || {}), routingKey: msg.fields.routingKey };
+        await runWithRequestContext(toRequestContextFromHeaders(headers), async () => {
+          await onMessage(payload, headers);
+        });
         this.channel.ack(msg);
       } catch (error) {
         this.logger.error({ err: error, queue }, 'rabbit_consume_failed');
