@@ -144,5 +144,25 @@ export class AuthController {
     const result = await this.authService.requestEmailChange();
     return ok(res, result, 501);
   };
+
+  startPhoneVerification = async (req, res) => {
+    const context = {
+      ipAddress: req.clientIp,
+      userAgent: req.userAgent,
+      requestId: req.requestId,
+    };
+    const result = await this.authService.startPhoneVerification(req.auth.userId, req.body, context);
+    return ok(res, result);
+  };
+
+  verifyPhone = async (req, res) => {
+    const context = {
+      ipAddress: req.clientIp,
+      userAgent: req.userAgent,
+      requestId: req.requestId,
+    };
+    const result = await this.authService.verifyPhone(req.auth.userId, req.body, context);
+    return ok(res, result);
+  };
 }
 

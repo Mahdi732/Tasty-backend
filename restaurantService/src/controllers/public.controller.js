@@ -32,5 +32,14 @@ export class PublicController {
     );
     return ok(res, payload);
   };
+
+  estimateDeliveryTime = async (req, res) => {
+    const estimate = await this.publicService.estimateDeliveryTime(
+      req.params.citySlug,
+      req.params.slug,
+      req.body
+    );
+    return ok(res, estimate);
+  };
 }
 
