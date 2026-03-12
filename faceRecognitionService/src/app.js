@@ -35,6 +35,9 @@ export const createContainer = async () => {
   const faceController = new FaceController(faceService);
 
   return {
+    services: {
+      faceService,
+    },
     controllers: {
       healthController,
       faceController,
