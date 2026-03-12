@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../middlewares/validate.middleware.js';
 import { asyncHandler } from '../utils/async-handler.js';
-import { citySlugParamSchema, paginationQuerySchema } from '../validators/restaurant.validator.js';
+import { citySlugParamSchema, estimateDeliveryTimeSchema, paginationQuerySchema } from '../validators/restaurant.validator.js';
 
 export const buildPublicRoutes = (publicController) => {
   const router = Router();
@@ -17,6 +17,12 @@ export const buildPublicRoutes = (publicController) => {
     validate(citySlugParamSchema, 'params'),
     validate(paginationQuerySchema, 'query'),
     asyncHandler(publicController.getMenu)
+  );
+  router.post(
+    '/restaurants/:citySlug/:slug/estimate-delivery-time',
+    validate(citySlugParamSchema, 'params'),
+    validate(estimateDeliveryTimeSchema),
+    asyncHandler(publicController.estimateDeliveryTime)
   );
 
   return router;

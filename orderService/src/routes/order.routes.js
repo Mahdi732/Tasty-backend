@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/async-handler.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { createOrderSchema, restaurantOrdersParamSchema, scanQrSchema } from '../validators/order.validator.js';
+import {
+  createOrderSchema,
+  driverArrivedSchema,
+  orderIdParamSchema,
+  restaurantOrdersParamSchema,
+  scanQrSchema,
+} from '../validators/order.validator.js';
 import { ROLES } from '../constants/roles.js';
 
 export const buildOrderRoutes = ({
@@ -32,6 +38,14 @@ export const buildOrderRoutes = ({
     validate(scanQrSchema),
     requireRole(ROLES.STAFF, ROLES.MANAGER, ROLES.DELIVERY_MAN, ROLES.SUPERADMIN),
     asyncHandler(orderController.scanQr)
+  );
+
+  router.post(
+    '/:orderId/driver-arrived',
+    validate(orderIdParamSchema, 'params'),
+    validate(driverArrivedSchema),
+    requireRole(ROLES.DELIVERY_MAN, ROLES.SUPERADMIN),
+    asyncHandler(orderController.markDriverArrived)
   );
 
   return router;
