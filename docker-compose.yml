@@ -1,0 +1,173 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: tasty-mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: tasty-redis
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: tasty-rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  python-embedder:
+    build:
+      context: ./faceRecognitionService/python-embedder
+      dockerfile: Dockerfile
+    container_name: tasty-python-embedder
+    ports:
+      - '8081:8081'
+
+  user-service:
+    build:
+      context: .
+      dockerfile: userService/Dockerfile
+    container_name: tasty-user-service
+    env_file:
+      - ./userService/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/tasty_user
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      FACE_SERVICE_BASE_URL: http://face-recognition-service:4030
+      FACE_SERVICE_GRPC_TARGET: face-recognition-service:50054
+      GRPC_PORT: 50051
+    depends_on:
+      - mongo
+      - redis
+      - rabbitmq
+      - face-recognition-service
+    ports:
+      - '4000:4000'
+
+  restaurant-service:
+    build:
+      context: .
+      dockerfile: restaurantService/Dockerfile
+    container_name: tasty-restaurant-service
+    env_file:
+      - ./restaurantService/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/tasty_restaurant
+      REDIS_ENABLED: 'true'
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_ENABLED: 'true'
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      JWT_JWKS_URI: http://user-service:4000/.well-known/jwks.json
+      GRPC_PORT: 50053
+    depends_on:
+      - mongo
+      - redis
+      - rabbitmq
+      - user-service
+    ports:
+      - '4010:4010'
+
+  order-service:
+    build:
+      context: .
+      dockerfile: orderService/Dockerfile
+    container_name: tasty-order-service
+    env_file:
+      - ./orderService/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/tasty_order
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      JWT_JWKS_URI: http://user-service:4000/.well-known/jwks.json
+      FACE_SERVICE_BASE_URL: http://face-recognition-service:4030
+      FACE_SERVICE_GRPC_TARGET: face-recognition-service:50054
+      GRPC_PORT: 50052
+    depends_on:
+      - mongo
+      - rabbitmq
+      - user-service
+      - face-recognition-service
+    ports:
+      - '4020:4020'
+
+  face-recognition-service:
+    build:
+      context: .
+      dockerfile: faceRecognitionService/Dockerfile
+    container_name: tasty-face-recognition-service
+    env_file:
+      - ./faceRecognitionService/.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/tasty_face
+      PYTHON_EMBEDDER_URL: http://python-embedder:8081
+      GRPC_PORT: 50054
+    depends_on:
+      - mongo
+      - python-embedder
+    ports:
+      - '4030:4030'
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notificationService/Dockerfile
+    container_name: tasty-notification-service
+    environment:
+      NODE_ENV: development
+      PORT: 4060
+      LOG_LEVEL: info
+      MONGO_URI: mongodb://mongo:27017/tasty_notification
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: http://localhost:3000
+      BODY_LIMIT: 16kb
+      TRUST_PROXY: 1
+      REQUEST_TIMEOUT_MS: 10000
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      RABBITMQ_EXCHANGE_EVENTS: tasty.domain.events
+      RABBITMQ_EXCHANGE_COMMANDS: tasty.domain.commands
+      RABBITMQ_PREFETCH: 20
+      RABBITMQ_QUEUE_NOTIFICATION_ENFORCEMENT: notification.enforcement.events.q
+      ENFORCEMENT_QUEUE_NAME: notification.enforcement.timer.q
+      DRIVER_WAIT_TOTAL_SECONDS: 300
+      DRIVER_WAIT_WARNING_OFFSET_SECONDS: 180
+      PUSH_PROVIDER: noop
+      SMS_PROVIDER: noop
+      SMS_FROM_PHONE: '+10000000000'
+      GRPC_PORT: 50055
+    depends_on:
+      - mongo
+      - redis
+      - rabbitmq
+      - order-service
+    ports:
+      - '4060:4060'
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apiGateway/Dockerfile
+    container_name: tasty-api-gateway
+    env_file:
+      - ./apiGateway/.env
+    depends_on:
+      - user-service
+      - restaurant-service
+      - order-service
+      - face-recognition-service
+      - notification-service
+    ports:
+      - '443:443'
+
+volumes:
+  mongo_data:
+  redis_data:

@@ -1,252 +1,330 @@
-# Tasty Backend - Global Architecture & Role Actions
+# Tasty Backend Master Audit And DevOps Roadmap
 
-This document is the global backend overview for the current split architecture:
+Last updated: 2026-03-11
 
-- `userService` (Identity + Auth)
-- `restaurantService` (Restaurant + Menu)
-- `orderService` (Orders + QR + Payment status updates)
+## API Gateway (Express + gRPC + HTTPS)
 
----
+`apiGateway` is now the single external entrypoint for backend APIs.
 
-## 1) What was implemented in this backend
+### Gateway Directory Structure
 
-### Core refactor completed
-
-- Auth became identity-only and tenant-agnostic.
-- Restaurant and Order responsibilities were split into separate services.
-- Restaurant service no longer owns order APIs.
-- Order service now owns order lifecycle, QR scan flow, and payment status updates.
-- RabbitMQ event bridge was added between services.
-
-### Current service boundaries
-
-- `userService`
-	- User registration/login/session refresh/logout
-	- OAuth (Google/Facebook)
-	- Email verification OTP flow
-	- RS256 JWT issuance + JWKS endpoint
-
-- `restaurantService`
-	- Restaurant onboarding and lifecycle transitions
-	- Subscription + verification gating
-	- Staff assignment and restaurant membership mapping
-	- Menu/category/item management
-	- Public restaurant/menu read APIs
-	- Emits restaurant membership events
-
-- `orderService`
-	- Create/list orders
-	- Restaurant-scoped order read
-	- QR token generation + one-time scan completion
-	- Payment success event consumption and payment status update
-	- Emits order domain events
-
----
-
-## 2) Tech stack and infrastructure used
-
-- Node.js + Express (all services)
-- MongoDB + Mongoose
-- Redis (auth/session/rate-limit and verification throttling)
-- RabbitMQ (cross-service event communication)
-- JWT RS256 + JWKS (`jose`)
-- Zod validation
-- Jest + Supertest tests
-- Docker Compose per service
-
----
-
-## 3) API ownership map (quick)
-
-### userService
-
-- Health + JWKS
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/refresh`
-- `POST /auth/logout`
-- `POST /auth/logout-all`
-- `GET /auth/me`
-- `POST /auth/email/start-verification`
-- `POST /auth/email/verify`
-- `GET /auth/oauth/:provider/start`
-- `GET /auth/oauth/:provider/callback`
-- `POST /auth/oauth/link/:provider`
-- `DELETE /auth/oauth/unlink/:provider`
-- `GET /auth/sessions`
-- `DELETE /auth/sessions/:sessionId`
-
-### restaurantService
-
-- Public:
-	- `GET /restaurants`
-	- `GET /restaurants/:citySlug/:slug`
-	- `GET /restaurants/:citySlug/:slug/menu`
-- Manager/Superadmin:
-	- create/update/read restaurants
-	- request publish
-	- assign staff
-	- CRUD categories/items
-	- set item availability/publish
-- Superadmin only:
-	- verify/unverify/reject
-	- suspend/unsuspend
-	- update subscription
-
-### orderService
-
-- `POST /v1/orders/me` create order
-- `GET /v1/orders/me` current user orders
-- `GET /v1/orders/restaurant/:restaurantId` restaurant orders (scoped)
-- `GET /v1/orders/admin/all` all orders (superadmin)
-- `POST /v1/orders/qr/scan` consume QR and complete order
-
----
-
-## 4) Role-action matrix (what each role can do)
-
-Global roles from JWT:
-
-- `user`
-- `worker`
-- `staff`
-- `manager`
-- `superadmin`
-
-Restaurant-local mapping exists in `restaurantService` as `RestaurantUser(userId, restaurantId, role)` where local roles are `OWNER | MANAGER | STAFF`.
-
-### `user`
-
-- Can register/login/refresh/logout in `userService`.
-- Can verify own email.
-- Can read public restaurants/menus in `restaurantService`.
-- Can create own order and list own orders in `orderService`.
-- Cannot access manager/admin restaurant APIs.
-
-### `worker`
-
-- Inherits authenticated user capabilities.
-- In `restaurantService`, can manage menu items/categories only when global role check passes and restaurant membership access check passes on restaurant-scoped endpoints.
-- In `orderService`, can read restaurant orders and scan QR (if authorized by role and restaurant access middleware for restaurant read route).
-
-### `staff`
-
-- Same operational access profile as `worker` in current route rules.
-- Can manage menu resources on mapped restaurants.
-- Can read restaurant orders and scan QR.
-
-### `manager`
-
-- Can create restaurants.
-- Can update/request publish/view owned restaurant.
-- Can assign staff to owned restaurant.
-- Can manage menu for owned restaurant.
-- Cannot run superadmin lifecycle actions (verify/suspend/subscription admin endpoints).
-- Can read restaurant orders in `orderService` when mapped.
-
-### `superadmin`
-
-- Full manager-level capabilities.
-- Can access superadmin-only restaurant lifecycle endpoints.
-- Can list all orders in `orderService`.
-- Bypasses restaurant membership checks where middleware allows superadmin bypass.
-
----
-
-## 5) Event contracts (RabbitMQ)
-
-### Published by `restaurantService`
-
-- `restaurant.created`
-- `restaurant.staff.assigned`
-- `restaurant.staff.removed` (declared event contract)
-
-### Consumed by `orderService`
-
-- `restaurant.staff.assigned`
-- `restaurant.staff.removed`
-- `payment.succeeded`
-
-### Published by `orderService`
-
-- `order.created`
-- `order.qr.generated`
-- `order.payment.status.changed`
-
----
-
-## 6) Lifecycle / cycle views
-
-### A) Identity flow
-
-```mermaid
-flowchart LR
-	Client[Client App] --> AuthAPI[userService API]
-	AuthAPI --> MongoAuth[(MongoDB Auth)]
-	AuthAPI --> Redis[(Redis)]
-	AuthAPI --> SMTP[Email Sender]
-	AuthAPI --> JWT[RS256 Access Token + Refresh Token]
-	JWT --> Client
-	OtherServices[restaurantService/orderService] --> JWKS[/.well-known/jwks.json]
-	JWKS --> OtherServices
+```text
+backend/
+  apiGateway/
+    certs/
+      cert.pem
+      key.pem
+    scripts/
+      generate-dev-certs.ps1
+      generate-dev-certs.sh
+    src/
+      config/
+        env.js
+        logger.js
+      grpc/
+        clients.js
+      middlewares/
+        auth.middleware.js
+      routes/
+        api.routes.js
+      app.js
+      server.js
+    Dockerfile
+    package.json
 ```
 
-### B) Restaurant onboarding and publish lifecycle
+### gRPC Contract Location
 
-```mermaid
-flowchart LR
-	Manager[Manager Client] --> RestaurantAPI[restaurantService]
-	RestaurantAPI --> MongoRestaurant[(MongoDB Restaurant)]
-	RestaurantAPI --> VerifyGate[Verification + Subscription Gate]
-	VerifyGate --> Status[Draft/Pending/Active/Suspended]
-	RestaurantAPI --> EventBus[(RabbitMQ)]
-	EventBus --> OrderAPI[orderService membership projection]
+Shared contracts are under:
+
+- `backend/common/protos/user.proto`
+- `backend/common/protos/order.proto`
+- `backend/common/protos/restaurant.proto`
+- `backend/common/protos/face.proto`
+- `backend/common/protos/notification.proto`
+
+### Sample Contract + Implementations
+
+Sample proto:
+- `backend/common/protos/order.proto`
+
+Gateway REST -> gRPC translation:
+- `backend/apiGateway/src/routes/api.routes.js`
+- Example: `POST /api/v1/orders` -> `grpcClients.order.createOrder(...)`
+
+Service gRPC handler implementation:
+- `backend/orderService/src/grpc/server.js`
+- Example: `CreateOrder` and `MarkDriverArrived` call `orderService` directly.
+
+### HTTPS Local Development
+
+Generate self-signed certificates:
+
+```bash
+cd backend/apiGateway
+npm run certs:generate
 ```
 
-### C) Order lifecycle (delivery/presence + QR)
+Gateway starts HTTPS using:
 
-```mermaid
-flowchart LR
-	Customer[Customer Client] --> OrderAPI[orderService]
-	OrderAPI --> MongoOrder[(MongoDB Order)]
-	OrderAPI --> QR[QR Token Hash + TTL]
-	OrderAPI --> EventBus[(RabbitMQ)]
-	Worker[Worker/Staff App] --> OrderAPI
-	Worker -->|scan QR| OrderAPI
-	OrderAPI -->|mark completed| MongoOrder
+- `SSL_KEY_PATH`
+- `SSL_CERT_PATH`
+
+from `backend/apiGateway/.env`.
+
+### Crucial Face Activation Gate Before Orders
+
+The gateway enforces account and face status before order forwarding:
+
+1. JWT is verified in `backend/apiGateway/src/middlewares/auth.middleware.js`.
+2. Middleware requires:
+   - `status === ACTIVE`
+   - `verification.face === true`
+3. Only then does route handler in `backend/apiGateway/src/routes/api.routes.js` forward to order gRPC.
+
+This centralizes enforcement at the edge and prevents non-activated users from reaching order flows.
+
+## Executive Summary
+- The backend architecture is strong enough to continue frontend development in parallel.
+- Core anti-fraud business logic is implemented across `userService`, `orderService`, `faceRecognitionService`, `restaurantService`, and `notificationService`.
+- The system is not production-ready yet due to gaps in API gateway, Kubernetes deployment assets, observability hardening, secrets management, and deeper end-to-end testing.
+
+## 1) Full Project Audit
+
+### 1.1 Microservice True Status
+
+| Service | Status | Why |
+|---|---|---|
+| `userService` | Partial | 4-gate states and phone OTP flow are implemented, but there is still scaffolded logic (`requestEmailChange`) and several unit tests are placeholders. |
+| `faceRecognitionService` | Partial | Core activation/search/compare/blacklist paths exist, but some behavior is still placeholder-level (for example fallback model version naming and limited integration hardening evidence). |
+| `orderService` | Partial | Core order/QR expiry/scammer trap is implemented; payment remains intentionally skeleton (`payment-skeleton.service.js`), and integration coverage is still shallow. |
+| `restaurantService` | Partial | Menu and ETA logic are implemented (`averagePrepTime`, estimate endpoint), but production concerns (contracts, deep load testing, rollout controls) are still pending. |
+| `notificationService` | Partial | Durable BullMQ timer engine and race-condition guard are implemented with unit/integration tests, but external channel providers are still mostly `noop` by configuration and there is no full cross-service E2E suite yet. |
+| `common` shared library | Complete (for current scope) | Shared auth/error/request-id/validate middleware is present and wired across services. |
+
+### 1.2 User And Scammer Lifecycle Trace
+
+Target lifecycle: Signup -> ID Upload -> Face Scan -> Phone OTP -> Order -> Driver Arrival -> QR Expiry -> Auto-Ban
+
+| Lifecycle Stage | Current State | Notes |
+|---|---|---|
+| Signup | Implemented | `register` creates user with pending verification state. |
+| Email verification | Implemented | OTP flow exists and transitions status forward. |
+| Phone OTP verification | Implemented | 4-digit OTP with throttling, lockouts, and status transition is in place. |
+| ID upload + live compare | Implemented | `activate-account` requires `idCardImageBase64` and compares ID to live face before activation. |
+| Face scan/activation | Implemented | Face activation and watchlist checks are wired. |
+| Order placement | Implemented | Order lifecycle and QR generation exist. |
+| Driver arrival event | Implemented | `order.driver.arrived` route/event now exists in `orderService`. |
+| 3-minute warning timer | Implemented | `notificationService` warning job emits `timer.3_minutes_left` and warning SMS path. |
+| QR expiry handling | Implemented | `order.qr.expired` emission exists in `orderService` and timer path in `notificationService`. |
+| Auto-ban/blacklist debtor | Implemented (with caveat) | `orderService` calls face blacklist debtor endpoint; depends on face service availability and robust retries/backoff still needs hardening. |
+
+### 1.3 Ghost Code Audit
+
+Ghost code means discussed behavior not fully implemented or intentionally stubbed.
+
+Confirmed ghost/skeleton areas:
+- `userService/src/services/auth.service.js`: `requestEmailChange()` returns `{ scaffolded: true }`.
+- `orderService/src/services/payment-skeleton.service.js`: payment remains a placeholder publisher, not a real gateway integration.
+- Channel defaults still `noop` in `notificationService` and `userService` unless real provider env config is supplied.
+- Several tests remain scaffold-level in `userService` unit suite and do not deeply validate business invariants.
+- No full end-to-end test that runs real RabbitMQ + Redis + all services through the complete fraud timeline.
+
+## 2) Gap Analysis For Production Readiness
+
+### 2.1 Reliability And Correctness Gaps
+- No global distributed tracing (OpenTelemetry) across service boundaries.
+- No standardized dead-letter queue strategy for RabbitMQ consumers.
+- Retry/backoff and idempotency policy is inconsistent across external calls.
+- No formal event contract versioning policy (schema governance for domain events).
+- Limited full-chain integration testing under real infra dependencies.
+
+### 2.2 Security And Compliance Gaps
+- Secrets are currently managed via `.env` files; move to a secrets manager for production.
+- Rotate any real provider credentials immediately if committed or shared.
+- Add centralized audit sink and immutable fraud-event retention policy.
+- Add formal PII data lifecycle policy (retention, purge, legal hold).
+
+### 2.3 Platform And Operations Gaps
+- No API gateway in front of internal services.
+- No Kubernetes manifests/Helm/Kustomize assets yet.
+- No production-grade CI/CD with environment promotion gates.
+- No SLO dashboard (latency, queue lag, failure rates, timer drift).
+
+## 3) Tech Upgrade Plan
+
+### 3.1 API Gateway Plan
+
+Goal: hide internal services and centralize auth, rate limits, routing, and observability.
+
+Option A: Kong Gateway (recommended fastest path)
+- Use Kong as edge entrypoint.
+- Route prefixes:
+  - `/api/auth/*` -> `userService`
+  - `/api/restaurants/*` -> `restaurantService`
+  - `/api/orders/*` -> `orderService`
+  - `/api/face/*` -> `faceRecognitionService` (internal-only routes restricted)
+  - `/api/notifications/*` -> `notificationService` (mostly admin/internal)
+- Enable plugins:
+  - JWT/OIDC verification
+  - Rate limiting per route
+  - Request/response logging
+  - Correlation ID propagation
+
+Option B: Custom Node/NestJS Gateway
+- Build an API gateway service with route aggregation and BFF patterns.
+- Pros: custom business orchestration and payload shaping.
+- Cons: more code ownership and security maintenance burden.
+
+Recommendation
+- Start with Kong for control-plane speed and policy consistency, then add custom gateway/BFF only where needed.
+
+### 3.2 Kubernetes (Minikube) Deployment Plan
+
+Create a `k8s/` folder with:
+
+Core infra manifests:
+- `k8s/namespace.yaml`
+- `k8s/configmap.backend.yaml`
+- `k8s/secrets.backend.yaml`
+- `k8s/mongo/deployment.yaml`
+- `k8s/mongo/service.yaml`
+- `k8s/redis/deployment.yaml`
+- `k8s/redis/service.yaml`
+- `k8s/rabbitmq/deployment.yaml`
+- `k8s/rabbitmq/service.yaml`
+
+Application manifests:
+- `k8s/user-service/deployment.yaml`
+- `k8s/user-service/service.yaml`
+- `k8s/restaurant-service/deployment.yaml`
+- `k8s/restaurant-service/service.yaml`
+- `k8s/order-service/deployment.yaml`
+- `k8s/order-service/service.yaml`
+- `k8s/face-recognition-service/deployment.yaml`
+- `k8s/face-recognition-service/service.yaml`
+- `k8s/python-embedder/deployment.yaml`
+- `k8s/python-embedder/service.yaml`
+- `k8s/notification-service/deployment.yaml`
+- `k8s/notification-service/service.yaml`
+- `k8s/kong/deployment.yaml` (or ingress controller)
+- `k8s/kong/service.yaml`
+
+Policy and resilience manifests:
+- `k8s/hpa/*.yaml` for autoscaling
+- `k8s/pdb/*.yaml` for disruption budgets
+- `k8s/network-policy/*.yaml` to restrict east-west traffic
+- `k8s/ingress/ingress.yaml`
+
+Minimum container probes for each app deployment:
+- Liveness: `GET /v1/health`
+- Readiness: `GET /v1/health` or `/v1/ready` where available
+
+### 3.3 GitHub Actions CI/CD Plan
+
+Create `.github/workflows/backend-ci-cd.yml` with stages:
+
+1. `test`
+- Trigger on push and PR.
+- Matrix by service directory.
+- Run `npm ci` and `npm test`.
+- Optional: run dockerized integration jobs with Redis/RabbitMQ service containers.
+
+2. `build`
+- Build Docker images for all services after tests pass.
+- Tag images with commit SHA and branch/environment tag.
+
+3. `publish`
+- Push images to registry (GHCR or Docker Hub).
+- Use OIDC or repository secrets for auth.
+
+4. `deploy` (environment protected)
+- Deploy to staging first.
+- Require manual approval for production.
+- Run smoke checks against gateway endpoints.
+
+Suggested image naming:
+- `ghcr.io/<org>/tasty-user-service:<sha>`
+- `ghcr.io/<org>/tasty-restaurant-service:<sha>`
+- `ghcr.io/<org>/tasty-order-service:<sha>`
+- `ghcr.io/<org>/tasty-face-recognition-service:<sha>`
+- `ghcr.io/<org>/tasty-notification-service:<sha>`
+
+## 4) Configuration Master Checklist
+
+### 4.1 Current Local Single Command
+From `backend/`:
+
+```bash
+docker-compose up --build
 ```
 
-### D) Payment status update flow
+This now starts Mongo, Redis, RabbitMQ, Python embedder, and all five backend services.
 
-```mermaid
-flowchart LR
-	PaymentSvc[Payment Service] -->|payment.succeeded| EventBus[(RabbitMQ)]
-	EventBus --> OrderAPI[orderService consumer]
-	OrderAPI --> MongoOrder[(MongoDB Order)]
-	OrderAPI -->|order.payment.status.changed| EventBus
-```
+### 4.2 Required Production Configuration By Service
 
----
+`userService`
+- DB/cache: `MONGO_URI`, `REDIS_URL`
+- Auth: JWT issuer/audience/keys, token hash secret
+- Verification: email OTP + phone OTP settings
+- Integrations: face service URL/API key, RabbitMQ URL
+- Providers: SMTP and SMS provider credentials
 
-## 7) Analysis checklist: possible missing pieces / refactor candidates
+`restaurantService`
+- DB/cache/event bus: `MONGO_URI`, `REDIS_URL`, `RABBITMQ_URL`
+- Auth trust: `JWT_JWKS_URI`, issuer/audience
+- Policy toggles: verification requirements and activation gates
 
-Use this list to decide next refactor steps.
+`orderService`
+- DB/event bus: `MONGO_URI`, `RABBITMQ_URL`
+- Auth trust: `JWT_JWKS_URI`, issuer/audience
+- QR controls: signing secret, TTL, scan batch params
+- Face blacklist bridge: face base URL/API key/tenant
 
-1. `orderService` test coverage is still minimal compared to other services (currently mostly smoke-level).
-2. `payment.failed` and `payment.refunded` events are defined in constants but success path is the implemented consumer path.
-3. `restaurant.staff.removed` event is part of contract but removal endpoint/flow should be verified end-to-end if you need full staff offboarding now.
-4. `POST /v1/orders/me` is authenticated but not role-restricted beyond auth; if you want only customer role ordering, add role guard.
-5. `POST /v1/orders/qr/scan` checks role but restaurant membership enforcement is token/order-based; add explicit membership enforcement if your policy requires it.
+`faceRecognitionService`
+- DB/event bus: `MONGO_URI`, `RABBITMQ_URL` if used
+- Worker: `PYTHON_EMBEDDER_URL`
+- Security: internal API key, threshold tuning
 
----
+`notificationService`
+- DB/cache/event bus: `MONGO_URI`, `REDIS_URL`, `RABBITMQ_URL`
+- Timer: queue name, warning and total wait seconds
+- Channels: `PUSH_PROVIDER`, `SMS_PROVIDER` and provider credentials
 
-## 8) Demo-ready verification command set
+Shared hardening for all services:
+- `NODE_ENV=production`
+- strict CORS origin list
+- request size/time limits
+- log level and structured JSON logs
+- centralized secret injection (not `.env` in production)
 
-Run all backend tests:
+## 5) Final Recommendation
 
-- `cd backend/userService && npm test`
-- `cd backend/restaurantService && npm test`
-- `cd backend/orderService && npm test`
+Short answer:
+- Yes, start frontend now.
+- No, do not call backend production-ready yet.
 
-If all pass, backend regression baseline is healthy for demo.
+Recommended execution order:
+1. Continue frontend against current backend contracts and gateway-like path conventions.
+2. In parallel, complete platform hardening: API gateway + CI/CD + observability baseline.
+3. Then ship Kubernetes rollout (staging first, production later).
 
+Decision rationale:
+- Business logic and service boundaries are already stable enough for frontend integration.
+- Platform controls and operational reliability must be upgraded before real production traffic.
+
+## 6) Immediate Next Actions (Two-Week Plan)
+
+Week 1
+1. Add Kong gateway and route policies.
+2. Add end-to-end fraud lifecycle test with real RabbitMQ + Redis.
+3. Replace `noop` providers in non-dev envs and add secret management.
+
+Week 2
+1. Add Kubernetes manifests for infra and all 5 services.
+2. Add GitHub Actions test/build/publish pipeline.
+3. Add staging deployment + smoke tests + queue lag dashboard.
+
+## 7) Critical Security Note
+
+If any real SMS/API credentials were exposed in local files, shared snippets, or git history, rotate them immediately and replace with newly issued secrets before further testing or deployment.
