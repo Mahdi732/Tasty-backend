@@ -1,0 +1,24 @@
+{
+  "name": "tasty-api-gateway",
+  "version": "1.0.0",
+  "description": "HTTPS REST to gRPC gateway for Tasty backend",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "certs:generate": "powershell -ExecutionPolicy Bypass -File scripts/generate-dev-certs.ps1"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.6",
+    "@grpc/proto-loader": "^0.7.13",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jose": "^5.9.6",
+    "pino": "^9.6.0",
+    "pino-http": "^10.3.0",
+    "zod": "^3.24.2"
+  }
+}
