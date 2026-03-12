@@ -28,6 +28,7 @@ const fulfillmentSchema = new mongoose.Schema(
     deliveryAddress: { type: String, default: null },
     tableRef: { type: String, default: null },
     scheduledAt: { type: Date, default: null },
+    driverArrivedAt: { type: Date, default: null },
   },
   { _id: false }
 );
