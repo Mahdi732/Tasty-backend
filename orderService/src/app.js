@@ -51,8 +51,7 @@ export const createContainer = async () => {
   });
 
   const faceBlacklistClient = new FaceBlacklistClient({
-    baseUrl: env.FACE_SERVICE_BASE_URL,
-    apiKey: env.FACE_SERVICE_API_KEY,
+    grpcTarget: env.FACE_SERVICE_GRPC_TARGET,
     tenantId: env.FACE_SERVICE_TENANT_ID,
     timeoutMs: env.FACE_SERVICE_TIMEOUT_MS,
     logger,
