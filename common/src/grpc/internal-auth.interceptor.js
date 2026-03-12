@@ -1,4 +1,5 @@
 import grpc from '@grpc/grpc-js';
+import { runWithRequestContext } from '../tracing/context.js';
 
 const META_KEYS = {
   internalSecret: 'x-internal-service-secret',
@@ -6,6 +7,7 @@ const META_KEYS = {
   userStatus: 'x-user-status',
   userRoles: 'x-user-roles',
   requestId: 'x-request-id',
+  correlationId: 'x-correlation-id',
 };
 
 const getMetadataValue = (metadata, key) => {
@@ -46,6 +48,9 @@ export const createInternalAuthInterceptor = ({ internalServiceSecret, logger } 
       status: getMetadataValue(call.metadata, META_KEYS.userStatus),
       roles: parseRoles(getMetadataValue(call.metadata, META_KEYS.userRoles)),
       requestId: getMetadataValue(call.metadata, META_KEYS.requestId),
+      correlationId:
+        getMetadataValue(call.metadata, META_KEYS.correlationId)
+        || getMetadataValue(call.metadata, META_KEYS.requestId),
     };
 
     if (requireUser && !requestContext.userId) {
@@ -62,7 +67,7 @@ export const createInternalAuthInterceptor = ({ internalServiceSecret, logger } 
         call,
         requireUser: Boolean(options.requireUser),
       });
-      await handler(call, callback, context);
+      await runWithRequestContext(context, () => handler(call, callback, context));
     } catch (error) {
       if (error?.code != null && error?.details) {
         callback(error);
