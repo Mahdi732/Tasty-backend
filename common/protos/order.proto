@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package tasty.order.v1;
+
+service OrderService {
+  rpc CreateOrder (CreateOrderRequest) returns (OrderResponse);
+  rpc MarkDriverArrived (DriverArrivedRequest) returns (OrderResponse);
+}
+
+message AuthContext {
+  string user_id = 1;
+  repeated string roles = 2;
+  string status = 3;
+}
+
+message OrderItem {
+  string menu_item_id = 1;
+  string name = 2;
+  double unit_price = 3;
+  int32 quantity = 4;
+}
+
+message RestaurantSnapshot {
+  string name = 1;
+  string slug = 2;
+  string city_slug = 3;
+  int32 version = 4;
+  double tax_rate = 5;
+  double service_fee = 6;
+  string currency = 7;
+}
+
+message Fulfillment {
+  string mode = 1;
+  string delivery_address = 2;
+  string table_ref = 3;
+  string scheduled_at = 4;
+}
+
+message CreateOrderRequest {
+  AuthContext auth = 1;
+  string restaurant_id = 2;
+  string order_type = 3;
+  string payment_method = 4;
+  RestaurantSnapshot restaurant_snapshot = 5;
+  Fulfillment fulfillment = 6;
+  repeated OrderItem items = 7;
+}
+
+message DriverArrivedRequest {
+  AuthContext auth = 1;
+  string order_id = 2;
+  string phone_number = 3;
+  string push_token = 4;
+  string id_number_masked = 5;
+  double debt_amount = 6;
+}
+
+message OrderResponse {
+  bool success = 1;
+  string message = 2;
+  string order_id = 3;
+  string order_status = 4;
+  string payment_status = 5;
+  string qr_token = 6;
+}

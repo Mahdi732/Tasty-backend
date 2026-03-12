@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package tasty.face.v1;
+
+service FaceService {
+  rpc CompareIdWithFace (CompareIdWithFaceRequest) returns (CompareIdWithFaceResponse);
+  rpc ActivateIdentity (ActivateIdentityRequest) returns (ActivateIdentityResponse);
+  rpc SearchWatchlists (SearchWatchlistsRequest) returns (SearchWatchlistsResponse);
+  rpc BlacklistDebtor (BlacklistDebtorRequest) returns (BlacklistDebtorResponse);
+}
+
+message CompareIdWithFaceRequest {
+  string id_card_image_base64 = 1;
+  string live_image_base64 = 2;
+  string tenant_id = 3;
+  string request_id = 4;
+}
+
+message CompareIdWithFaceResponse {
+  bool success = 1;
+  string message = 2;
+  bool matched = 3;
+  double score = 4;
+  string liveness_status = 5;
+}
+
+message ActivateIdentityRequest {
+  string image_base64 = 1;
+  string tenant_id = 2;
+  string person_ref = 3;
+  string request_id = 4;
+}
+
+message ActivateIdentityResponse {
+  bool success = 1;
+  string message = 2;
+  string identity_id = 3;
+}
+
+message SearchWatchlistsRequest {
+  string image_base64 = 1;
+  string tenant_id = 2;
+  double threshold = 3;
+  string request_id = 4;
+}
+
+message WatchlistCandidate {
+  string person_ref = 1;
+  string list_type = 2;
+  double score = 3;
+}
+
+message SearchWatchlistsResponse {
+  bool success = 1;
+  string message = 2;
+  string decision = 3;
+  repeated WatchlistCandidate candidates = 4;
+}
+
+message BlacklistDebtorRequest {
+  string tenant_id = 1;
+  string person_ref = 2;
+  string reason = 3;
+  string request_id = 4;
+}
+
+message BlacklistDebtorResponse {
+  bool success = 1;
+  string message = 2;
+  bool blacklisted = 3;
+}

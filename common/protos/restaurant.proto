@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package tasty.restaurant.v1;
+
+service RestaurantService {
+  rpc EstimateDeliveryTime (EstimateDeliveryTimeRequest) returns (EstimateDeliveryTimeResponse);
+}
+
+message EstimateDeliveryTimeRequest {
+  string city_slug = 1;
+  string slug = 2;
+  repeated string item_ids = 3;
+  double distance_km = 4;
+  double average_speed_kmph = 5;
+}
+
+message EstimateDeliveryTimeResponse {
+  bool success = 1;
+  string message = 2;
+  int32 max_prep_time_minutes = 3;
+  int32 travel_minutes = 4;
+  int32 estimated_delivery_minutes = 5;
+}

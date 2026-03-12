@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package tasty.notification.v1;
+
+service NotificationService {
+  rpc EnqueueDriverArrival (EnqueueDriverArrivalRequest) returns (NotificationAck);
+}
+
+message EnqueueDriverArrivalRequest {
+  string order_id = 1;
+  string user_id = 2;
+  string restaurant_id = 3;
+  string phone_number = 4;
+  string push_token = 5;
+  string id_number_masked = 6;
+  double debt_amount = 7;
+  string arrived_at = 8;
+}
+
+message NotificationAck {
+  bool success = 1;
+  string message = 2;
+}

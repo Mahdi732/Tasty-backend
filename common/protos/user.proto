@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package tasty.user.v1;
+
+service UserService {
+  rpc RegisterUser (RegisterUserRequest) returns (AuthResponse);
+  rpc LoginUser (LoginUserRequest) returns (AuthResponse);
+  rpc GetUserProfile (GetUserProfileRequest) returns (UserProfileResponse);
+}
+
+message RegisterUserRequest {
+  string email = 1;
+  string password = 2;
+  string phone_number = 3;
+  string ip_address = 4;
+  string user_agent = 5;
+  string device_id = 6;
+}
+
+message LoginUserRequest {
+  string email = 1;
+  string password = 2;
+  string ip_address = 3;
+  string user_agent = 4;
+  string device_id = 5;
+}
+
+message AuthResponse {
+  bool success = 1;
+  string message = 2;
+  string access_token = 3;
+  string refresh_token = 4;
+  int32 access_token_expires_in = 5;
+  string user_id = 6;
+  string email = 7;
+  repeated string roles = 8;
+  string status = 9;
+}
+
+message GetUserProfileRequest {
+  string user_id = 1;
+}
+
+message UserProfileResponse {
+  bool success = 1;
+  string message = 2;
+  string user_id = 3;
+  string email = 4;
+  string phone_number = 5;
+  repeated string roles = 6;
+  string status = 7;
+  bool is_email_verified = 8;
+  bool is_phone_verified = 9;
+  bool is_face_verified = 10;
+}
