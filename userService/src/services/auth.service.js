@@ -5,13 +5,14 @@ import { ROLES } from '../constants/roles.js';
 import { USER_STATUS } from '../constants/user-status.js';
 
 export class AuthService {
-  constructor({ userRepository, passwordHasher, tokenService, sessionService, auditService, emailVerificationService }) {
+  constructor({ userRepository, passwordHasher, tokenService, sessionService, auditService, emailVerificationService, phoneVerificationService }) {
     this.userRepository = userRepository;
     this.passwordHasher = passwordHasher;
     this.tokenService = tokenService;
     this.sessionService = sessionService;
     this.auditService = auditService;
     this.emailVerificationService = emailVerificationService;
+    this.phoneVerificationService = phoneVerificationService;
   }
 
   async register(payload, context) {
@@ -27,8 +28,11 @@ export class AuthService {
       email: payload.email,
       passwordHash,
       roles: [ROLES.USER],
+      phoneNumber: payload.phoneNumber,
       isEmailVerified: false,
       emailVerifiedAt: null,
+      isPhoneVerified: false,
+      phoneVerifiedAt: null,
       isFaceVerified: false,
       faceIdentityId: null,
       activationDeadline: null,
@@ -80,7 +84,13 @@ export class AuthService {
       );
     }
 
-    if (![USER_STATUS.ACTIVE, USER_STATUS.PENDING_FACE_ACTIVATION].includes(user.status)) {
+    if (
+      ![
+        USER_STATUS.ACTIVE,
+        USER_STATUS.PENDING_FACE_ACTIVATION,
+        USER_STATUS.PENDING_PHONE_VERIFICATION,
+      ].includes(user.status)
+    ) {
       throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Account disabled');
     }
 
@@ -106,7 +116,14 @@ export class AuthService {
     }
 
     const user = await this.userRepository.findById(session.userId);
-    if (!user || ![USER_STATUS.ACTIVE, USER_STATUS.PENDING_FACE_ACTIVATION].includes(user.status)) {
+    if (
+      !user
+      || ![
+        USER_STATUS.ACTIVE,
+        USER_STATUS.PENDING_FACE_ACTIVATION,
+        USER_STATUS.PENDING_PHONE_VERIFICATION,
+      ].includes(user.status)
+    ) {
       throw new ApiError(401, ERROR_CODES.AUTH_UNAUTHORIZED, 'Invalid refresh token');
     }
 
@@ -158,6 +175,20 @@ export class AuthService {
 
   async requestEmailChange() {
     return { scaffolded: true };
+  }
+
+  async startPhoneVerification(userId, payload, context) {
+    if (!this.phoneVerificationService) {
+      return { sent: true };
+    }
+    return this.phoneVerificationService.startVerification(userId, payload.phoneNumber, context);
+  }
+
+  async verifyPhone(userId, payload, context) {
+    if (!this.phoneVerificationService) {
+      return { verified: true };
+    }
+    return this.phoneVerificationService.verifyCode(userId, payload.phoneNumber, payload.code, context);
   }
 }
 
