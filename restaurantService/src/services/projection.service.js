@@ -72,6 +72,7 @@ export class ProjectionService {
         description: item.description,
         images: item.images,
         basePrice: item.basePrice,
+        averagePrepTime: item.averagePrepTime || 15,
         currency: item.currency,
         availability: item.availability,
         tags: item.tags,

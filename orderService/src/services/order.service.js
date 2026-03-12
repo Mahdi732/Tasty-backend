@@ -346,5 +346,38 @@ export class OrderService {
 
     return { processed };
   }
+
+  async markDriverArrived(orderId, auth, metadata = {}, headers = {}) {
+    const order = await this.orderRepository.findById(orderId);
+    if (!order) {
+      throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Order not found');
+    }
+
+    if (order.orderType !== ORDER_TYPE.DELIVERY) {
+      throw new ApiError(409, ERROR_CODES.CONFLICT, 'Driver arrival is only valid for delivery orders');
+    }
+
+    await this.assertScannerAuthorized(order, auth);
+
+    const now = new Date();
+    const updated = await this.orderRepository.updateById(order._id, {
+      'fulfillment.driverArrivedAt': now,
+    });
+
+    await this.rabbitBus.publishEvent(EVENTS.ORDER_DRIVER_ARRIVED, {
+      orderId: String(updated._id),
+      userId: updated.userId,
+      restaurantId: updated.restaurantId,
+      driverId: auth.userId,
+      arrivedAt: now.toISOString(),
+      qrExpiresAt: updated.qr?.expiresAt ? new Date(updated.qr.expiresAt).toISOString() : null,
+      phoneNumber: metadata.phoneNumber || null,
+      pushToken: metadata.pushToken || null,
+      idNumberMasked: metadata.idNumberMasked || 'UNKNOWN',
+      debtAmount: metadata.debtAmount ?? updated.totals?.total ?? 0,
+    }, headers);
+
+    return updated;
+  }
 }
 
