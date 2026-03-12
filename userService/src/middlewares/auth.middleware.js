@@ -3,8 +3,12 @@ import { ERROR_CODES } from '../constants/errors.js';
 import { USER_STATUS } from '../constants/user-status.js';
 import { createJwtAuthMiddleware } from '../../../common/src/middlewares/auth.middleware.js';
 
-const canAccessWhilePendingActivation = (method, path) => {
+const canAccessWhilePendingVerification = (method, path) => {
   if (method === 'POST' && path === '/activate-account') return true;
+  if (method === 'POST' && path === '/auth/phone/start-verification') return true;
+  if (method === 'POST' && path === '/auth/phone/verify') return true;
+  if (method === 'POST' && path === '/auth/email/start-verification') return true;
+  if (method === 'POST' && path === '/auth/email/verify') return true;
   if (method === 'GET' && path === '/profile') return true;
   return false;
 };
@@ -29,10 +33,7 @@ export const authMiddleware = (jwtVerifier, userRepository) => async (req, _res,
       req.auth.status = user.status;
 
       const requestPath = (req.originalUrl || req.path || '').split('?')[0];
-      if (
-        user.status === USER_STATUS.PENDING_FACE_ACTIVATION &&
-        !canAccessWhilePendingActivation(req.method, requestPath)
-      ) {
+      if (user.status === USER_STATUS.PENDING_FACE_ACTIVATION && !canAccessWhilePendingVerification(req.method, requestPath)) {
         throw new ApiError(
           403,
           ERROR_CODES.AUTH_FORBIDDEN,
@@ -40,7 +41,15 @@ export const authMiddleware = (jwtVerifier, userRepository) => async (req, _res,
         );
       }
 
-      if (![USER_STATUS.ACTIVE, USER_STATUS.PENDING_FACE_ACTIVATION].includes(user.status)) {
+      if (user.status === USER_STATUS.PENDING_PHONE_VERIFICATION && !canAccessWhilePendingVerification(req.method, requestPath)) {
+        throw new ApiError(
+          403,
+          ERROR_CODES.AUTH_FORBIDDEN,
+          'Phone verification is required before using this endpoint'
+        );
+      }
+
+      if (![USER_STATUS.ACTIVE, USER_STATUS.PENDING_FACE_ACTIVATION, USER_STATUS.PENDING_PHONE_VERIFICATION].includes(user.status)) {
         throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Account cannot access protected resources');
       }
     },
