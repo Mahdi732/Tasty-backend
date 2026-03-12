@@ -7,8 +7,11 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, lowercase: true, trim: true, unique: true },
     passwordHash: { type: String, default: null },
     roles: { type: [String], enum: ROLE_LIST, default: [ROLES.USER] },
+    phoneNumber: { type: String, default: null, trim: true },
     isEmailVerified: { type: Boolean, default: false },
     emailVerifiedAt: { type: Date, default: null },
+    isPhoneVerified: { type: Boolean, default: false },
+    phoneVerifiedAt: { type: Date, default: null },
     status: {
       type: String,
       enum: USER_STATUS_LIST,
@@ -28,6 +31,11 @@ const userSchema = new mongoose.Schema(
     lastLoginAt: { type: Date, default: null },
   },
   { timestamps: true }
+);
+
+userSchema.index(
+  { phoneNumber: 1 },
+  { unique: true, sparse: true, partialFilterExpression: { phoneNumber: { $type: 'string' } } }
 );
 
 export const UserModel = mongoose.model('User', userSchema);

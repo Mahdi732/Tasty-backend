@@ -5,6 +5,7 @@ const emailSchema = z.string().trim().toLowerCase().email().max(254);
 export const registerSchema = z.object({
   email: emailSchema,
   password: z.string().min(12).max(128),
+  phoneNumber: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/),
 });
 
 export const loginSchema = z.object({
@@ -37,6 +38,15 @@ export const verifyEmailSchema = z.object({
 
 export const requestEmailChangeSchema = z.object({
   newEmail: emailSchema,
+});
+
+export const startPhoneVerificationSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/),
+});
+
+export const verifyPhoneSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+?[1-9]\d{7,14}$/),
+  code: z.string().trim().regex(/^\d{4}$/),
 });
 
 export const activateAccountSchema = z.object({

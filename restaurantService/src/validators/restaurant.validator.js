@@ -108,3 +108,9 @@ export const subscriptionUpdateSchema = z.object({
   cancelAtPeriodEnd: z.boolean().optional(),
 });
 
+export const estimateDeliveryTimeSchema = z.object({
+  itemIds: z.array(z.string().min(1)).min(1),
+  distanceKm: z.number().positive(),
+  averageSpeedKmph: z.number().positive().optional().default(25),
+});
+
