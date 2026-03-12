@@ -12,6 +12,7 @@ const envSchema = z.object({
   BODY_LIMIT: z.string().default('32kb'),
   TRUST_PROXY: z.coerce.number().default(1),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
+  INTERNAL_SERVICE_SECRET: z.string().min(16),
 
   JWT_JWKS_URI: z.string().url(),
   JWT_ISSUER: z.string().min(1),
@@ -27,6 +28,7 @@ const envSchema = z.object({
   QR_SIGNING_SECRET: z.string().min(8),
   QR_TTL_SECONDS: z.coerce.number().int().positive().default(10800),
   FACE_SERVICE_BASE_URL: z.string().url().default('http://localhost:4030'),
+  FACE_SERVICE_GRPC_TARGET: z.string().default('localhost:50054'),
   FACE_SERVICE_API_KEY: z.string().min(8).default('change-me-key'),
   FACE_SERVICE_TENANT_ID: z.string().min(1).default('global'),
   FACE_SERVICE_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
