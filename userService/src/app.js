@@ -15,10 +15,12 @@ import { UserModel } from './models/user.model.js';
 import { RefreshSessionModel } from './models/refresh-session.model.js';
 import { OAuthAccountModel } from './models/oauth-account.model.js';
 import { EmailVerificationModel } from './models/email-verification.model.js';
+import { PhoneVerificationModel } from './models/phone-verification.model.js';
 import { UserRepository } from './repositories/user.repository.js';
 import { SessionRepository } from './repositories/session.repository.js';
 import { OAuthAccountRepository } from './repositories/oauth-account.repository.js';
 import { EmailVerificationRepository } from './repositories/email-verification.repository.js';
+import { PhoneVerificationRepository } from './repositories/phone-verification.repository.js';
 import { PasswordHasher } from './security/password.hasher.js';
 import { TokenGenerator } from './security/token.generator.js';
 import { JwtSigner } from './security/jwt.signer.js';
@@ -32,8 +34,12 @@ import { UserService } from './services/user.service.js';
 import { FaceRecognitionClient } from './services/face-recognition.client.js';
 import { IdCardVaultService } from './services/id-card-vault.service.js';
 import { EmailVerificationService } from './services/email-verification.service.js';
+import { PhoneVerificationService } from './services/phone-verification.service.js';
 import { NodemailerEmailSender } from './services/email/nodemailer-email.sender.js';
 import { NoopEmailSender } from './services/email/noop-email.sender.js';
+import { NoopSmsSender } from './services/sms/noop-sms.sender.js';
+import { TwilioSmsSender } from './services/sms/twilio-sms.sender.js';
+import { InfobipSmsSender } from './services/sms/infobip-sms.sender.js';
 import { OAuthProviderFactory } from './oauth/oauth-provider.factory.js';
 import { OAuthClientConfigResolver } from './oauth/oauth-client-config.resolver.js';
 import { OAuthService } from './services/oauth.service.js';
@@ -77,6 +83,7 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
   const sessionRepository = new SessionRepository(RefreshSessionModel);
   const oauthAccountRepository = new OAuthAccountRepository(OAuthAccountModel);
   const emailVerificationRepository = new EmailVerificationRepository(EmailVerificationModel);
+  const phoneVerificationRepository = new PhoneVerificationRepository(PhoneVerificationModel);
 
   const passwordHasher = new PasswordHasher();
   const tokenGenerator = new TokenGenerator();
@@ -106,6 +113,32 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
     otpGenerator,
   });
 
+  let smsSender = new NoopSmsSender();
+  if (env.SMS_PROVIDER === 'twilio') {
+    smsSender = new TwilioSmsSender({
+      accountSid: env.TWILIO_ACCOUNT_SID,
+      authToken: env.TWILIO_AUTH_TOKEN,
+      fromPhone: env.SMS_FROM_PHONE,
+      logger,
+    });
+  } else if (env.SMS_PROVIDER === 'infobip') {
+    smsSender = new InfobipSmsSender({
+      baseUrl: env.INFOBIP_BASE_URL,
+      apiKey: env.INFOBIP_API_KEY,
+      fromPhone: env.SMS_FROM_PHONE,
+      logger,
+    });
+  }
+
+  const phoneVerificationService = new PhoneVerificationService({
+    env,
+    redisClient,
+    userRepository,
+    phoneVerificationRepository,
+    smsSender,
+    auditService,
+  });
+
   const authService = new AuthService({
     userRepository,
     passwordHasher,
@@ -113,11 +146,11 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
     sessionService,
     auditService,
     emailVerificationService,
+    phoneVerificationService,
   });
 
   const faceRecognitionClient = new FaceRecognitionClient({
-    baseUrl: env.FACE_SERVICE_BASE_URL,
-    apiKey: env.FACE_SERVICE_API_KEY,
+    grpcTarget: env.FACE_SERVICE_GRPC_TARGET,
     timeoutMs: env.FACE_SERVICE_TIMEOUT_MS,
     logger,
   });
@@ -192,6 +225,12 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
     keyGenerator: (req) => `email-verification:${getClientIp(req)}:${(req.body?.email || '').toLowerCase()}`,
   });
 
+  const phoneVerificationLimiter = createRateLimiter(redisClient, {
+    windowMs: env.PHONE_VERIFICATION_SEND_WINDOW_SECONDS * 1000,
+    max: env.PHONE_VERIFICATION_SEND_MAX_PER_WINDOW,
+    keyGenerator: (req) => `phone-verification:${getClientIp(req)}:${req.auth?.userId || 'anonymous'}`,
+  });
+
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(requestIdMiddleware);
   app.use(httpLogger);
@@ -219,6 +258,7 @@ export const buildApp = async ({ redisClient, otpGenerator, emailSender }) => {
       loginLimiter,
       refreshLimiter,
       emailVerificationLimiter,
+      phoneVerificationLimiter,
     })
   );
 
