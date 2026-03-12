@@ -11,5 +11,11 @@ export const authMiddleware = (jwtVerifier) => createJwtAuthMiddleware({
       throw new ApiError(401, ERROR_CODES.AUTH_UNAUTHORIZED, 'Authentication required');
     }
   },
+  onAuthenticated: async (req, payload) => {
+    if (payload?.status !== 'ACTIVE') {
+      throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Complete account verification before accessing this resource');
+    }
+    req.auth.status = payload?.status;
+  },
 });
 
