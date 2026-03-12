@@ -148,10 +148,14 @@ export class EmailVerificationService {
     user.isEmailVerified = true;
     user.emailVerifiedAt = new Date();
     if (user.status === USER_STATUS.PENDING_EMAIL_VERIFICATION) {
-      user.status = USER_STATUS.PENDING_FACE_ACTIVATION;
-      user.activationDeadline = new Date(
-        Date.now() + this.env.ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS * 24 * 60 * 60 * 1000
-      );
+      user.status = user.isPhoneVerified
+        ? USER_STATUS.PENDING_FACE_ACTIVATION
+        : USER_STATUS.PENDING_PHONE_VERIFICATION;
+      if (user.isPhoneVerified) {
+        user.activationDeadline = new Date(
+          Date.now() + this.env.ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS * 24 * 60 * 60 * 1000
+        );
+      }
     }
     await this.userRepository.save(user);
 

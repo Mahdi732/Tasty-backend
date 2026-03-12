@@ -10,9 +10,11 @@ import {
   startEmailVerificationSchema,
   verifyEmailSchema,
   requestEmailChangeSchema,
+  startPhoneVerificationSchema,
+  verifyPhoneSchema,
 } from '../validators/auth.validators.js';
 
-export const buildAuthRoutes = ({ authController, authMiddleware, loginLimiter, refreshLimiter, emailVerificationLimiter }) => {
+export const buildAuthRoutes = ({ authController, authMiddleware, loginLimiter, refreshLimiter, emailVerificationLimiter, phoneVerificationLimiter }) => {
   const router = Router();
 
   router.post('/register', loginLimiter, validate(registerSchema), asyncHandler(authController.register));
@@ -29,6 +31,19 @@ export const buildAuthRoutes = ({ authController, authMiddleware, loginLimiter, 
   );
   router.post('/email/verify', validate(verifyEmailSchema), asyncHandler(authController.verifyEmail));
   router.post('/email/change/request', validate(requestEmailChangeSchema), asyncHandler(authController.requestEmailChange));
+  router.post(
+    '/phone/start-verification',
+    authMiddleware,
+    phoneVerificationLimiter,
+    validate(startPhoneVerificationSchema),
+    asyncHandler(authController.startPhoneVerification)
+  );
+  router.post(
+    '/phone/verify',
+    authMiddleware,
+    validate(verifyPhoneSchema),
+    asyncHandler(authController.verifyPhone)
+  );
 
   return router;
 };

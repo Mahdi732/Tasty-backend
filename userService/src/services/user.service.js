@@ -21,9 +21,11 @@ export class UserService {
     return {
       id: user.id,
       email: user.email,
+      phoneNumber: user.phoneNumber,
       roles: user.roles,
       status: user.status,
       isEmailVerified: user.isEmailVerified,
+      isPhoneVerified: user.isPhoneVerified,
       isFaceVerified: user.isFaceVerified,
       faceIdentityId: user.faceIdentityId,
       activationDeadline: user.activationDeadline,
@@ -54,6 +56,10 @@ export class UserService {
 
     if (!user.isEmailVerified || user.status === USER_STATUS.PENDING_EMAIL_VERIFICATION) {
       throw new ApiError(403, ERROR_CODES.EMAIL_NOT_VERIFIED, 'Email verification is required first');
+    }
+
+    if (!user.isPhoneVerified || user.status === USER_STATUS.PENDING_PHONE_VERIFICATION) {
+      throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Phone verification is required first');
     }
 
     if (user.status === USER_STATUS.ACTIVE && user.isFaceVerified) {

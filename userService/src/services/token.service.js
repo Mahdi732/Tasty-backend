@@ -70,6 +70,12 @@ export class TokenService {
     const accessToken = await this.jwtSigner.signAccessToken({
       sub: user.id,
       roles: user.roles,
+      status: user.status,
+      verification: {
+        email: Boolean(user.isEmailVerified),
+        phone: Boolean(user.isPhoneVerified),
+        face: Boolean(user.isFaceVerified),
+      },
       sid: sessionId,
       jti: uuidv4(),
       typ: 'access',
