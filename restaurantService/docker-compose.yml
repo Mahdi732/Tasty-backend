@@ -9,17 +9,22 @@ services:
     env_file:
       - .env
     depends_on:
-      - mongo
+      - restaurant-db
       - redis
     restart: unless-stopped
 
-  mongo:
+  restaurant-db:
     image: mongo:7
-    container_name: tasty-restaurant-mongo
+    container_name: tasty-restaurant-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: restaurant_root
+      MONGO_INITDB_ROOT_PASSWORD: restaurant-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_restaurant
     ports:
       - "27019:27017"
     volumes:
-      - mongo-data:/data/db
+      - restaurant_data:/data/db
+      - ../docker/mongo-init/restaurant-db.js:/docker-entrypoint-initdb.d/01-restaurant-db.js:ro
 
   redis:
     image: redis:7-alpine
@@ -28,4 +33,4 @@ services:
       - "6381:6379"
 
 volumes:
-  mongo-data:
+  restaurant_data:

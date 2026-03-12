@@ -1,13 +1,70 @@
 version: '3.9'
 
 services:
-  mongo:
+  user-db:
     image: mongo:7
-    container_name: tasty-mongo
+    container_name: tasty-user-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user_root
+      MONGO_INITDB_ROOT_PASSWORD: user-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_user
     ports:
       - '27017:27017'
     volumes:
-      - mongo_data:/data/db
+      - user_data:/data/db
+      - ./docker/mongo-init/user-db.js:/docker-entrypoint-initdb.d/01-user-db.js:ro
+
+  order-db:
+    image: mongo:7
+    container_name: tasty-order-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: order_root
+      MONGO_INITDB_ROOT_PASSWORD: order-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_order
+    ports:
+      - '27020:27017'
+    volumes:
+      - order_data:/data/db
+      - ./docker/mongo-init/order-db.js:/docker-entrypoint-initdb.d/01-order-db.js:ro
+
+  restaurant-db:
+    image: mongo:7
+    container_name: tasty-restaurant-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: restaurant_root
+      MONGO_INITDB_ROOT_PASSWORD: restaurant-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_restaurant
+    ports:
+      - '27019:27017'
+    volumes:
+      - restaurant_data:/data/db
+      - ./docker/mongo-init/restaurant-db.js:/docker-entrypoint-initdb.d/01-restaurant-db.js:ro
+
+  face-db:
+    image: mongo:7
+    container_name: tasty-face-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: face_root
+      MONGO_INITDB_ROOT_PASSWORD: face-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_face
+    ports:
+      - '27030:27017'
+    volumes:
+      - face_data:/data/db
+      - ./docker/mongo-init/face-db.js:/docker-entrypoint-initdb.d/01-face-db.js:ro
+
+  notification-db:
+    image: mongo:7
+    container_name: tasty-notification-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: notification_root
+      MONGO_INITDB_ROOT_PASSWORD: notification-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_notification
+    ports:
+      - '27031:27017'
+    volumes:
+      - notification_data:/data/db
+      - ./docker/mongo-init/notification-db.js:/docker-entrypoint-initdb.d/01-notification-db.js:ro
 
   redis:
     image: redis:7-alpine
@@ -41,14 +98,14 @@ services:
     env_file:
       - ./userService/.env
     environment:
-      MONGO_URI: mongodb://mongo:27017/tasty_user
+      MONGO_URI: mongodb://tasty_user_app:user-app-pass-dev@user-db:27017/tasty_user?authSource=tasty_user
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://rabbitmq:5672
       FACE_SERVICE_BASE_URL: http://face-recognition-service:4030
       FACE_SERVICE_GRPC_TARGET: face-recognition-service:50054
       GRPC_PORT: 50051
     depends_on:
-      - mongo
+      - user-db
       - redis
       - rabbitmq
       - face-recognition-service
@@ -63,7 +120,7 @@ services:
     env_file:
       - ./restaurantService/.env
     environment:
-      MONGO_URI: mongodb://mongo:27017/tasty_restaurant
+      MONGO_URI: mongodb://tasty_restaurant_app:restaurant-app-pass-dev@restaurant-db:27017/tasty_restaurant?authSource=tasty_restaurant
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       RABBITMQ_ENABLED: 'true'
@@ -71,7 +128,7 @@ services:
       JWT_JWKS_URI: http://user-service:4000/.well-known/jwks.json
       GRPC_PORT: 50053
     depends_on:
-      - mongo
+      - restaurant-db
       - redis
       - rabbitmq
       - user-service
@@ -86,14 +143,14 @@ services:
     env_file:
       - ./orderService/.env
     environment:
-      MONGO_URI: mongodb://mongo:27017/tasty_order
+      MONGO_URI: mongodb://tasty_order_app:order-app-pass-dev@order-db:27017/tasty_order?authSource=tasty_order
       RABBITMQ_URL: amqp://rabbitmq:5672
       JWT_JWKS_URI: http://user-service:4000/.well-known/jwks.json
       FACE_SERVICE_BASE_URL: http://face-recognition-service:4030
       FACE_SERVICE_GRPC_TARGET: face-recognition-service:50054
       GRPC_PORT: 50052
     depends_on:
-      - mongo
+      - order-db
       - rabbitmq
       - user-service
       - face-recognition-service
@@ -108,11 +165,11 @@ services:
     env_file:
       - ./faceRecognitionService/.env
     environment:
-      MONGO_URI: mongodb://mongo:27017/tasty_face
+      MONGO_URI: mongodb://tasty_face_app:face-app-pass-dev@face-db:27017/tasty_face?authSource=tasty_face
       PYTHON_EMBEDDER_URL: http://python-embedder:8081
       GRPC_PORT: 50054
     depends_on:
-      - mongo
+      - face-db
       - python-embedder
     ports:
       - '4030:4030'
@@ -126,7 +183,7 @@ services:
       NODE_ENV: development
       PORT: 4060
       LOG_LEVEL: info
-      MONGO_URI: mongodb://mongo:27017/tasty_notification
+      MONGO_URI: mongodb://tasty_notification_app:notification-app-pass-dev@notification-db:27017/tasty_notification?authSource=tasty_notification
       REDIS_URL: redis://redis:6379
       CORS_ORIGINS: http://localhost:3000
       BODY_LIMIT: 16kb
@@ -145,7 +202,7 @@ services:
       SMS_FROM_PHONE: '+10000000000'
       GRPC_PORT: 50055
     depends_on:
-      - mongo
+      - notification-db
       - redis
       - rabbitmq
       - order-service
@@ -169,5 +226,9 @@ services:
       - '443:443'
 
 volumes:
-  mongo_data:
+  user_data:
+  order_data:
+  restaurant_data:
+  face_data:
+  notification_data:
   redis_data:
