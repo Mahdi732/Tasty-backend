@@ -1,10 +1,13 @@
-import { buildApp } from './app.js';
+import { buildApp, createContainer } from './app.js';
 import { connectMongo, createRedis, env, logger } from './config/index.js';
 import { DomainEventPublisher } from './messaging/domain-event.publisher.js';
+import { startGrpcServer } from './grpc/server.js';
 
 let server;
 let redisClient;
 let eventPublisher;
+let container;
+let grpcServer;
 
 const start = async () => {
   await connectMongo(env.MONGO_URI);
@@ -22,9 +25,17 @@ const start = async () => {
     await eventPublisher.connect();
   }
 
-  const app = await buildApp({ redisClient, domainEventPublisher: eventPublisher });
+  container = await createContainer({ redisClient, domainEventPublisher: eventPublisher });
+  const app = await buildApp({ container });
   server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, 'restaurant_menu_service_started');
+  });
+
+  grpcServer = await startGrpcServer({
+    publicService: container.services.publicService,
+    logger,
+    internalServiceSecret: env.INTERNAL_SERVICE_SECRET,
+    port: Number(process.env.GRPC_PORT || 50053),
   });
 };
 
@@ -32,6 +43,9 @@ const shutdown = async (signal) => {
   logger.info({ signal }, 'shutting_down');
   if (server) {
     await new Promise((resolve) => server.close(resolve));
+  }
+  if (grpcServer) {
+    await new Promise((resolve) => grpcServer.tryShutdown(resolve));
   }
   if (redisClient?.isOpen) {
     await redisClient.quit();

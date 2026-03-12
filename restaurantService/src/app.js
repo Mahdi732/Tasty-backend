@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { v4 as uuidv4 } from 'uuid';
+import { getRequestContext } from '../../common/src/tracing/context.js';
 
 import { env, httpLogger, logger } from './config/index.js';
 import { requestIdMiddleware } from './middlewares/request-id.middleware.js';
@@ -41,9 +42,7 @@ import { PublicController } from './controllers/public.controller.js';
 import { AdminController } from './controllers/admin.controller.js';
 import { buildRoutes } from './routes/index.js';
 
-export const buildApp = async ({ redisClient, authMiddlewareOverride, domainEventPublisher } = {}) => {
-  const app = express();
-
+export const createContainer = async ({ redisClient, authMiddlewareOverride, domainEventPublisher } = {}) => {
   const restaurantRepository = new RestaurantRepository(RestaurantModel);
   const restaurantUserRepository = new RestaurantUserRepository(RestaurantUserModel);
   const categoryRepository = new MenuCategoryRepository(MenuCategoryModel);
@@ -74,10 +73,15 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride, domainEven
     projectionService,
     defaultCurrency: env.DEFAULT_RESTAURANT_CURRENCY,
     domainEventPublisher,
-    eventHeadersFactory: () => ({
-      eventId: uuidv4(),
-      occurredAt: new Date().toISOString(),
-    }),
+    eventHeadersFactory: () => {
+      const context = getRequestContext();
+      return {
+        eventId: uuidv4(),
+        correlationId: context?.correlationId || context?.requestId || uuidv4(),
+        causationId: context?.requestId || null,
+        occurredAt: new Date().toISOString(),
+      };
+    },
     logger,
   });
 
@@ -116,6 +120,30 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride, domainEven
     restaurantIdExtractor: (req) => req.params.id,
   });
 
+  return {
+    services: {
+      restaurantService,
+      menuService,
+      publicService,
+    },
+    controllers: {
+      healthController,
+      publicController,
+      restaurantController,
+      menuController,
+      adminController,
+    },
+    middlewares: {
+      authMiddleware,
+      requireRestaurantManageAccess,
+    },
+  };
+};
+
+export const buildApp = async ({ redisClient, authMiddlewareOverride, domainEventPublisher, container } = {}) => {
+  const app = express();
+  const deps = container || (await createContainer({ redisClient, authMiddlewareOverride, domainEventPublisher }));
+
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(requestIdMiddleware);
   app.use(httpLogger);
@@ -127,18 +155,20 @@ export const buildApp = async ({ redisClient, authMiddlewareOverride, domainEven
 
   app.use(
     buildRoutes({
-      healthController,
-      publicController,
-      restaurantController,
-      menuController,
-      adminController,
-      authMiddleware,
-      requireRestaurantManageAccess,
+      healthController: deps.controllers.healthController,
+      publicController: deps.controllers.publicController,
+      restaurantController: deps.controllers.restaurantController,
+      menuController: deps.controllers.menuController,
+      adminController: deps.controllers.adminController,
+      authMiddleware: deps.middlewares.authMiddleware,
+      requireRestaurantManageAccess: deps.middlewares.requireRestaurantManageAccess,
     })
   );
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware(logger));
+
+  app.locals.container = deps;
 
   return app;
 };
