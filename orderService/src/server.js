@@ -2,10 +2,12 @@ import { buildApp, createContainer } from './app.js';
 import { connectMongo, env, logger } from './config/index.js';
 import { registerConsumers } from './consumers/index.js';
 import { QrExpiryScammerTrapJob } from './jobs/qr-expiry-scammer-trap.job.js';
+import { startGrpcServer } from './grpc/server.js';
 
 let server;
 let container;
 let scammerTrapJob;
+let grpcServer;
 
 const start = async () => {
   await connectMongo(env.MONGO_URI);
@@ -32,6 +34,13 @@ const start = async () => {
   server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, 'order_service_started');
   });
+
+  grpcServer = await startGrpcServer({
+    orderService: container.orderService,
+    logger,
+    internalServiceSecret: env.INTERNAL_SERVICE_SECRET,
+    port: Number(process.env.GRPC_PORT || 50052),
+  });
 };
 
 const shutdown = async (signal) => {
@@ -39,6 +48,10 @@ const shutdown = async (signal) => {
 
   if (server) {
     await new Promise((resolve) => server.close(resolve));
+  }
+
+  if (grpcServer) {
+    await new Promise((resolve) => grpcServer.tryShutdown(resolve));
   }
 
   if (container?.rabbitBus) {
