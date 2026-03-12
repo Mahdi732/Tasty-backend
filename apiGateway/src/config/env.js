@@ -20,6 +20,10 @@ const envSchema = z.object({
   JWT_PUBLIC_KEY: z.string().min(32),
   INTERNAL_SERVICE_SECRET: z.string().min(16),
 
+  GRPC_DEADLINE_MS: z.coerce.number().int().positive().default(5000),
+  GRPC_CIRCUIT_BREAKER_FAILURE_THRESHOLD: z.coerce.number().int().positive().default(5),
+  GRPC_CIRCUIT_BREAKER_RESET_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
+
   USER_GRPC_TARGET: z.string().default('localhost:50051'),
   ORDER_GRPC_TARGET: z.string().default('localhost:50052'),
   RESTAURANT_GRPC_TARGET: z.string().default('localhost:50053'),
