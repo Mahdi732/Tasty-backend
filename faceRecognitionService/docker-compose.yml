@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     depends_on:
-      - mongo
+      - face-db
       - python-embedder
     restart: unless-stopped
 
@@ -22,13 +22,18 @@ services:
       - "8081:8081"
     restart: unless-stopped
 
-  mongo:
+  face-db:
     image: mongo:7
-    container_name: tasty-face-mongo
+    container_name: tasty-face-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: face_root
+      MONGO_INITDB_ROOT_PASSWORD: face-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_face
     ports:
       - "27030:27017"
     volumes:
-      - mongo-data:/data/db
+      - face_data:/data/db
+      - ../docker/mongo-init/face-db.js:/docker-entrypoint-initdb.d/01-face-db.js:ro
 
 volumes:
-  mongo-data:
+  face_data:

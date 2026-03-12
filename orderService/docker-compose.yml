@@ -9,17 +9,22 @@ services:
     env_file:
       - .env
     depends_on:
-      - mongo
+      - order-db
       - rabbitmq
     restart: unless-stopped
 
-  mongo:
+  order-db:
     image: mongo:7
-    container_name: tasty-order-mongo
+    container_name: tasty-order-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: order_root
+      MONGO_INITDB_ROOT_PASSWORD: order-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_order
     ports:
       - "27020:27017"
     volumes:
-      - mongo-data:/data/db
+      - order_data:/data/db
+      - ../docker/mongo-init/order-db.js:/docker-entrypoint-initdb.d/01-order-db.js:ro
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -29,4 +34,4 @@ services:
       - "15672:15672"
 
 volumes:
-  mongo-data:
+  order_data:
