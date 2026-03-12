@@ -1,4 +1,16 @@
 import amqplib from 'amqplib';
+import { v4 as uuidv4 } from 'uuid';
+import { getRequestContext } from '../../../common/src/tracing/context.js';
+
+const buildTracingHeaders = (headers = {}) => {
+  const context = getRequestContext();
+  const correlationId = headers.correlationId || context?.correlationId || context?.requestId || uuidv4();
+  return {
+    ...headers,
+    correlationId,
+    causationId: headers.causationId || context?.requestId || null,
+  };
+};
 
 export class DomainEventPublisher {
   constructor({ url, exchange, logger }) {
@@ -21,10 +33,11 @@ export class DomainEventPublisher {
   async publish(routingKey, payload, headers = {}) {
     await this.connect();
     const body = Buffer.from(JSON.stringify(payload));
+    const enrichedHeaders = buildTracingHeaders(headers);
     this.channel.publish(this.exchange, routingKey, body, {
       contentType: 'application/json',
       deliveryMode: 2,
-      headers,
+      headers: enrichedHeaders,
       timestamp: Date.now(),
     });
   }

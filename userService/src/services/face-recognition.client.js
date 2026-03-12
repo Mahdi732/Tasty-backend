@@ -1,97 +1,109 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import grpc from '@grpc/grpc-js';
+import protoLoader from '@grpc/proto-loader';
 import { ApiError } from '../utils/api-error.js';
 import { ERROR_CODES } from '../constants/errors.js';
 
-const withTimeout = async (promiseFactory, timeoutMs) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROTO_PATH = path.resolve(__dirname, '../../../common/protos/face.proto');
 
-  try {
-    return await promiseFactory(controller.signal);
-  } finally {
-    clearTimeout(timeout);
-  }
-};
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+
+const proto = grpc.loadPackageDefinition(packageDefinition);
+const FaceServiceClient = proto.tasty.face.v1.FaceService;
+
+const unary = (client, method, payload) =>
+  new Promise((resolve, reject) => {
+    client[method](payload, (error, response) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(response);
+    });
+  });
 
 export class FaceRecognitionClient {
-  constructor({ baseUrl, apiKey, timeoutMs, logger }) {
-    this.baseUrl = baseUrl;
-    this.apiKey = apiKey;
+  constructor({ grpcTarget, timeoutMs, logger }) {
     this.timeoutMs = timeoutMs;
     this.logger = logger;
+    this.client = new FaceServiceClient(
+      grpcTarget || 'localhost:50054',
+      grpc.credentials.createInsecure()
+    );
   }
 
-  async post(path, payload, requestId) {
+  async safeCall(method, payload) {
     try {
-      const response = await withTimeout(
-        (signal) =>
-          fetch(`${this.baseUrl}${path}`, {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-              'x-api-key': this.apiKey,
-              'x-request-id': requestId || '',
-            },
-            body: JSON.stringify(payload),
-            signal,
-          }),
-        this.timeoutMs
-      );
+      const response = await Promise.race([
+        unary(this.client, method, payload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('grpc_timeout')), this.timeoutMs)),
+      ]);
 
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message = data?.error?.message || data?.message || 'Face service request failed';
-        throw new ApiError(response.status, ERROR_CODES.FACE_SERVICE_UNAVAILABLE, message, data);
+      if (!response?.success) {
+        throw new ApiError(503, ERROR_CODES.FACE_SERVICE_UNAVAILABLE, response?.message || 'Face service request failed');
       }
-
-      return data?.data ?? data;
+      return response;
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
       }
-
       this.logger.warn({ err: error }, 'face_service_unreachable');
       throw new ApiError(503, ERROR_CODES.FACE_SERVICE_UNAVAILABLE, 'Face service is unavailable');
     }
   }
 
   async searchWatchlists({ imageBase64, tenantId, threshold, requestId }) {
-    return this.post(
-      '/v1/faces/search',
-      {
-        imageBase64,
-        tenantId,
-        targetLists: ['BANNED', 'DEBTOR'],
-        topK: 5,
-        threshold,
-      },
-      requestId
-    );
+    const data = await this.safeCall('SearchWatchlists', {
+      image_base64: imageBase64,
+      tenant_id: tenantId,
+      threshold,
+      request_id: requestId || '',
+    });
+
+    return {
+      decision: data.decision,
+      candidates: (data.candidates || []).map((candidate) => ({
+        personRef: candidate.person_ref,
+        listType: candidate.list_type,
+        score: candidate.score,
+      })),
+    };
   }
 
   async activateIdentity({ imageBase64, tenantId, personRef, requestId }) {
-    return this.post(
-      '/v1/faces/activate',
-      {
-        imageBase64,
-        tenantId,
-        personRef,
-        listType: 'NORMAL',
-        reason: 'mandatory-account-activation',
-      },
-      requestId
-    );
+    const data = await this.safeCall('ActivateIdentity', {
+      image_base64: imageBase64,
+      tenant_id: tenantId,
+      person_ref: personRef,
+      request_id: requestId || '',
+    });
+
+    return {
+      identityId: data.identity_id,
+    };
   }
 
   async compareIdWithFace({ idCardImageBase64, liveImageBase64, tenantId, requestId }) {
-    return this.post(
-      '/v1/faces/compare-id',
-      {
-        idCardImageBase64,
-        liveImageBase64,
-        tenantId,
-      },
-      requestId
-    );
+    const data = await this.safeCall('CompareIdWithFace', {
+      id_card_image_base64: idCardImageBase64,
+      live_image_base64: liveImageBase64,
+      tenant_id: tenantId,
+      request_id: requestId || '',
+    });
+
+    return {
+      matched: Boolean(data.matched),
+      score: Number(data.score || 0),
+      livenessStatus: String(data.liveness_status || 'UNKNOWN'),
+    };
   }
 }
-
