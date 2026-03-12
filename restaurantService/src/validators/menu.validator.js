@@ -45,6 +45,7 @@ export const createMenuItemSchema = z.object({
   description: z.string().optional(),
   images: z.array(z.string().url()).optional(),
   basePrice: z.number().min(0),
+  averagePrepTime: z.number().int().positive().optional().default(15),
   currency: z.string().min(1),
   availability: z.enum(['IN_STOCK', 'OUT_OF_STOCK']).optional(),
   isPublished: z.boolean().optional(),

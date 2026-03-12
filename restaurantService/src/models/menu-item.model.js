@@ -19,6 +19,7 @@ const menuItemSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     images: { type: [String], default: [] },
     basePrice: { type: Number, required: true, min: 0 },
+    averagePrepTime: { type: Number, min: 1, default: 15 },
     currency: { type: String, required: true },
     availability: {
       type: String,
