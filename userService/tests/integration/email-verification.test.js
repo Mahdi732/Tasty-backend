@@ -24,6 +24,7 @@ describe('Email verification flow', () => {
     await ctx.request.post('/auth/register').send({
       email: 'pending@example.com',
       password: 'StrongPass!123',
+      phoneNumber: '+12025550110',
     });
 
     const loginRes = await ctx.request.post('/auth/login').send({
@@ -41,6 +42,7 @@ describe('Email verification flow', () => {
     await ctx.request.post('/auth/register').send({
       email: 'verifyme@example.com',
       password: 'StrongPass!123',
+      phoneNumber: '+12025550111',
     });
 
     const resendRes = await ctx.request.post('/auth/email/start-verification').send({
@@ -68,6 +70,7 @@ describe('Email verification flow', () => {
     await ctx.request.post('/auth/register').send({
       email: 'locked@example.com',
       password: 'StrongPass!123',
+      phoneNumber: '+12025550112',
     });
 
     for (let i = 0; i < 4; i += 1) {
@@ -91,6 +94,7 @@ describe('Email verification flow', () => {
     await ctx.request.post('/auth/register').send({
       email: 'cooldown@example.com',
       password: 'StrongPass!123',
+      phoneNumber: '+12025550113',
     });
 
     const resend = await ctx.request.post('/auth/email/start-verification').send({

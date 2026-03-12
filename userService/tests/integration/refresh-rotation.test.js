@@ -22,6 +22,7 @@ describe('Refresh rotation', () => {
     await ctx.request.post('/auth/register').send({
       email: 'user2@example.com',
       password: 'StrongPass!123',
+      phoneNumber: '+12025550120',
     });
 
     const otp = ctx.emailSender.latestOtpFor('user2@example.com');

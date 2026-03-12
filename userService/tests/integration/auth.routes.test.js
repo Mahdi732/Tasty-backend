@@ -23,6 +23,7 @@ describe('Auth routes', () => {
     const registerRes = await ctx.request.post('/auth/register').send({
       email: 'user1@example.com',
       password: 'StrongPass!123',
+      phoneNumber: '+12025550101',
     });
 
     expect(registerRes.status).toBe(201);
@@ -73,7 +74,7 @@ describe('Auth routes', () => {
 
     expect(profileRes.status).toBe(200);
     expect(profileRes.body.data.email).toBe('user1@example.com');
-    expect(profileRes.body.data.status).toBe('PENDING_FACE_ACTIVATION');
+    expect(profileRes.body.data.status).toBe('PENDING_PHONE_VERIFICATION');
   });
 });
 
