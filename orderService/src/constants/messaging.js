@@ -1,6 +1,8 @@
 export const EVENTS = Object.freeze({
   ORDER_CREATED: 'order.created',
   ORDER_QR_GENERATED: 'order.qr.generated',
+  ORDER_DRIVER_ARRIVED: 'order.driver.arrived',
+  TIMER_3_MINUTES_LEFT: 'timer.3_minutes_left',
   ORDER_QR_EXPIRED: 'order.qr.expired',
   ORDER_PAID: 'order.paid',
   ORDER_PAYMENT_STATUS_CHANGED: 'order.payment.status.changed',

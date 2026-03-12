@@ -30,5 +30,15 @@ export class OrderController {
     const updated = await this.orderService.scanQr(req.body.qrToken, req.auth, buildEventHeaders(req));
     return ok(res, updated);
   };
+
+  markDriverArrived = async (req, res) => {
+    const updated = await this.orderService.markDriverArrived(
+      req.params.orderId,
+      req.auth,
+      req.body,
+      buildEventHeaders(req)
+    );
+    return ok(res, updated);
+  };
 }
 
