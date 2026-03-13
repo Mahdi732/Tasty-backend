@@ -15,6 +15,7 @@ message RegisterUserRequest {
   string ip_address = 4;
   string user_agent = 5;
   string device_id = 6;
+  string nickname = 7;
 }
 
 message LoginUserRequest {
@@ -35,6 +36,7 @@ message AuthResponse {
   string email = 7;
   repeated string roles = 8;
   string status = 9;
+  string nickname = 10;
 }
 
 message GetUserProfileRequest {
@@ -52,4 +54,5 @@ message UserProfileResponse {
   bool is_email_verified = 8;
   bool is_phone_verified = 9;
   bool is_face_verified = 10;
+  string nickname = 11;
 }
