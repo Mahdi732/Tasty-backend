@@ -37,6 +37,7 @@ export const startGrpcServer = async ({ authService, userService, logger, port =
             email: req.email,
             password: req.password,
             phoneNumber: req.phone_number,
+            nickname: req.nickname || null,
           },
           toContext(req)
         );
@@ -46,6 +47,7 @@ export const startGrpcServer = async ({ authService, userService, logger, port =
           message: result.verificationRequired ? 'verification_required' : 'registered',
           user_id: result.user?.id || '',
           email: result.user?.email || '',
+          nickname: result.user?.nickname || '',
           roles: result.user?.roles || [],
         });
       } catch (error) {
@@ -73,6 +75,7 @@ export const startGrpcServer = async ({ authService, userService, logger, port =
           access_token_expires_in: Number(result.accessTokenExpiresIn || 0),
           user_id: result.user?.id || '',
           email: result.user?.email || '',
+          nickname: result.user?.nickname || '',
           roles: result.user?.roles || [],
         });
       } catch (error) {
@@ -91,6 +94,7 @@ export const startGrpcServer = async ({ authService, userService, logger, port =
           message: 'ok',
           user_id: profile.id || '',
           email: profile.email || '',
+          nickname: profile.nickname || '',
           phone_number: profile.phoneNumber || '',
           roles: profile.roles || [],
           status: profile.status || '',

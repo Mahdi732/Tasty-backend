@@ -5,6 +5,7 @@ import { USER_STATUS_LIST, USER_STATUS } from '../constants/user-status.js';
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, lowercase: true, trim: true, unique: true },
+    nickname: { type: String, default: null, trim: true, maxlength: 64 },
     passwordHash: { type: String, default: null },
     roles: { type: [String], enum: ROLE_LIST, default: [ROLES.USER] },
     phoneNumber: { type: String, default: null, trim: true },

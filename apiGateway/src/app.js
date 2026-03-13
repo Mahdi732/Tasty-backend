@@ -6,7 +6,7 @@ import { httpLogger, logger } from './config/logger.js';
 import { createGrpcClients } from './grpc/clients.js';
 import { createAuthMiddleware } from './middlewares/auth.middleware.js';
 import { buildApiRoutes } from './routes/api.routes.js';
-import { createRequestIdMiddleware } from '../../../common/src/middlewares/request-id.middleware.js';
+import { createRequestIdMiddleware } from '../../common/src/middlewares/request-id.middleware.js';
 
 export const buildApp = () => {
   const app = express();
