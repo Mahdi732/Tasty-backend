@@ -26,6 +26,7 @@ export class AuthService {
 
     const user = await this.userRepository.create({
       email: payload.email,
+      nickname: payload.nickname || null,
       passwordHash,
       roles: [ROLES.USER],
       phoneNumber: payload.phoneNumber,
@@ -46,7 +47,12 @@ export class AuthService {
     this.auditService.log('auth.register_success', { userId: user.id, email: user.email, ipAddress: context.ipAddress });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles },
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname || null,
+        roles: user.roles,
+      },
       verificationRequired: !user.isEmailVerified,
     };
   }
@@ -103,7 +109,12 @@ export class AuthService {
     this.auditService.log('auth.login_success', { userId: user.id, ipAddress: context.ipAddress, sessionId: tokens.session.sessionId });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles },
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname || null,
+        roles: user.roles,
+      },
       ...tokens,
     };
   }
@@ -135,7 +146,12 @@ export class AuthService {
     this.auditService.log('auth.refresh_success', { userId: user.id, sessionId: tokens.session.sessionId, ipAddress: context.ipAddress });
 
     return {
-      user: { id: user.id, email: user.email, roles: user.roles },
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname || null,
+        roles: user.roles,
+      },
       ...tokens,
     };
   }

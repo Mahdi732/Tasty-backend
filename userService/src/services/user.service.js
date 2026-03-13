@@ -21,6 +21,7 @@ export class UserService {
     return {
       id: user.id,
       email: user.email,
+      nickname: user.nickname || null,
       phoneNumber: user.phoneNumber,
       roles: user.roles,
       status: user.status,
