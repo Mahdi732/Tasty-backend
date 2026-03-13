@@ -23,6 +23,7 @@ export const buildApiRoutes = ({ grpcClients, authMiddleware }) => {
         email: req.body.email,
         password: req.body.password,
         phone_number: req.body.phoneNumber,
+        nickname: req.body.nickname || '',
         ip_address: req.ip,
         user_agent: req.headers['user-agent'] || '',
         device_id: req.body.deviceId || '',
