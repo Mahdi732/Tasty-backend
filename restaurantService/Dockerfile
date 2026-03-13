@@ -8,6 +8,7 @@ RUN npm install
 WORKDIR /app
 COPY common ./common
 COPY restaurantService ./restaurantService
+RUN ln -s /app/restaurantService/node_modules /app/node_modules
 
 WORKDIR /app/restaurantService
 

@@ -10,6 +10,7 @@ RUN npm install
 WORKDIR /app
 COPY common ./common
 COPY apiGateway ./apiGateway
+RUN ln -s /app/apiGateway/node_modules /app/node_modules
 
 WORKDIR /app/apiGateway
 

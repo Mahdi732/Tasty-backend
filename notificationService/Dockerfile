@@ -8,6 +8,7 @@ RUN npm install
 WORKDIR /app
 COPY common ./common
 COPY notificationService ./notificationService
+RUN ln -s /app/notificationService/node_modules /app/node_modules
 
 WORKDIR /app/notificationService
 

@@ -9,6 +9,7 @@ ENV NODE_ENV=production
 COPY --from=base /app/userService/node_modules ./userService/node_modules
 COPY common ./common
 COPY userService ./userService
+RUN ln -s /app/userService/node_modules /app/node_modules
 WORKDIR /app/userService
 EXPOSE 4000
 CMD ["node", "src/server.js"]
