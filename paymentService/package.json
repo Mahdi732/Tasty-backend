@@ -1,27 +1,29 @@
 {
-  "name": "tasty-api-gateway",
+  "name": "tasty-payment-service",
   "version": "1.0.0",
-  "description": "HTTPS REST to gRPC gateway for Tasty backend",
+  "description": "Payment service for Tasty",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "certs:generate": "powershell -ExecutionPolicy Bypass -File scripts/generate-dev-certs.ps1"
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=20.10.0"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.6",
     "@grpc/proto-loader": "^0.7.13",
+    "amqplib": "^0.10.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
-    "http-proxy-middleware": "^3.0.5",
-    "jose": "^5.9.6",
+    "mongoose": "^8.10.1",
     "pino": "^9.6.0",
     "pino-http": "^10.3.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0",
     "zod": "^3.24.2"
   }
 }
