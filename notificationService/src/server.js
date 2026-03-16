@@ -9,6 +9,7 @@ let grpcServer;
 const start = async () => {
   await connectMongo(env.MONGO_URI);
   container = await createContainer();
+  await container.realtimeGateway.start();
   await container.enforcementNotificationService.start();
 
   const app = await buildApp({ container });
@@ -36,6 +37,10 @@ const shutdown = async (signal) => {
 
   if (container?.enforcementNotificationService) {
     await container.enforcementNotificationService.close();
+  }
+
+  if (container?.realtimeGateway) {
+    await container.realtimeGateway.close();
   }
 
   if (container?.rabbitBus) {

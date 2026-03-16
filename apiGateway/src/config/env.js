@@ -25,10 +25,12 @@ const envSchema = z.object({
   GRPC_CIRCUIT_BREAKER_RESET_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
 
   USER_GRPC_TARGET: z.string().default('localhost:50051'),
+  USER_HTTP_BASE_URL: z.string().default('http://localhost:4000'),
   ORDER_GRPC_TARGET: z.string().default('localhost:50052'),
   RESTAURANT_GRPC_TARGET: z.string().default('localhost:50053'),
   FACE_GRPC_TARGET: z.string().default('localhost:50054'),
   NOTIFICATION_GRPC_TARGET: z.string().default('localhost:50055'),
+  NOTIFICATION_SOCKET_TARGET: z.string().default('http://notification-service:4003'),
 });
 
 const parsed = envSchema.safeParse(process.env);

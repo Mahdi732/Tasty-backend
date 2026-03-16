@@ -21,6 +21,7 @@ import { NoopSmsSender } from './services/channels/noop-sms.sender.js';
 import { TwilioSmsSender } from './services/channels/twilio-sms.sender.js';
 import { InfobipSmsSender } from './services/channels/infobip-sms.sender.js';
 import { EnforcementNotificationService } from './services/enforcement-notification.service.js';
+import { createRealtimeGateway } from './realtime/socket-gateway.js';
 
 export const createContainer = async () => {
   const rabbitBus = new RabbitBus({
@@ -35,6 +36,7 @@ export const createContainer = async () => {
   const timerRepository = new EnforcementTimerRepository(EnforcementTimerModel);
   const orderStateRepository = new OrderStateRepository(OrderStateModel);
   const templates = new EnforcementTemplates();
+  const realtimeGateway = createRealtimeGateway({ env, logger });
 
   let pushSender = new NoopPushSender();
   if (env.PUSH_PROVIDER === 'fcm') {
@@ -70,11 +72,13 @@ export const createContainer = async () => {
     pushSender,
     smsSender,
     templates,
+    realtimeGateway,
   });
 
   return {
     rabbitBus,
     enforcementNotificationService,
+    realtimeGateway,
     controllers: {
       healthController: new HealthController(),
     },
