@@ -1,18 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
 import { httpLogger, logger } from './config/logger.js';
 import { createGrpcClients } from './grpc/clients.js';
 import { createAuthMiddleware } from './middlewares/auth.middleware.js';
 import { buildApiRoutes } from './routes/api.routes.js';
 import { createRequestIdMiddleware } from '../../common/src/middlewares/request-id.middleware.js';
+import { buildOpenApiSpec } from './docs/swagger.js';
 
 export const buildApp = () => {
   const app = express();
   const grpcClients = createGrpcClients({ env, logger });
   const authMiddleware = createAuthMiddleware({ env });
   const correlationMiddleware = createRequestIdMiddleware();
+  const openApiSpec = buildOpenApiSpec();
 
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(correlationMiddleware);
@@ -24,6 +27,20 @@ export const buildApp = () => {
   app.get('/v1/health', (_req, res) => {
     res.status(200).json({ success: true, data: { status: 'ok' } });
   });
+
+  app.get('/api-docs.json', (_req, res) => {
+    res.status(200).json(openApiSpec);
+  });
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(openApiSpec, {
+      explorer: true,
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    })
+  );
 
   app.use(buildApiRoutes({ grpcClients, authMiddleware }));
 
