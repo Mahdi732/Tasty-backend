@@ -7,6 +7,8 @@
  *     description: Order flows through orderService.
  *   - name: Restaurant
  *     description: ETA estimation through restaurantService.
+ *   - name: Payment
+ *     description: Subscription and order payments through paymentService.
  *   - name: Face Recognition
  *     description: Face checks through faceRecognitionService.
  */
@@ -88,6 +90,23 @@
  *   get:
  *     tags: [Auth]
  *     summary: Get current user profile.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile found.
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: Profile not found.
+ */
+
+/**
+ * @openapi
+ * /api/v1/auth/me:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Get current user profile (alias of /auth/profile).
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -302,6 +321,71 @@
  *         description: Driver arrival accepted.
  *       400:
  *         description: Validation failure.
+ */
+
+/**
+ * @openapi
+ * /api/v1/payments/subscribe:
+ *   post:
+ *     tags: [Payment]
+ *     summary: Create a subscription payment and emit payment.subscription.success.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, restaurantId, planId]
+ *             properties:
+ *               userId: { type: string }
+ *               restaurantId: { type: string }
+ *               planId: { type: string }
+ *               amount: { type: number, format: float }
+ *               currency: { type: string, example: USD }
+ *               payment:
+ *                 type: object
+ *                 properties:
+ *                   type: { type: string, example: CARD }
+ *                   token: { type: string }
+ *                   maskedPan: { type: string, example: "**** **** **** 4242" }
+ *                   brand: { type: string, example: VISA }
+ *     responses:
+ *       201:
+ *         description: Payment accepted and processed.
+ *       400:
+ *         description: Invalid payload.
+ */
+
+/**
+ * @openapi
+ * /api/v1/payments/order:
+ *   post:
+ *     tags: [Payment]
+ *     summary: Create an order payment and emit payment.order.success.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, orderId, amount]
+ *             properties:
+ *               userId: { type: string }
+ *               orderId: { type: string }
+ *               amount: { type: number, format: float }
+ *               currency: { type: string, example: USD }
+ *               payment:
+ *                 type: object
+ *                 properties:
+ *                   type: { type: string, example: CARD }
+ *                   token: { type: string }
+ *                   maskedPan: { type: string, example: "**** **** **** 4242" }
+ *                   brand: { type: string, example: VISA }
+ *     responses:
+ *       201:
+ *         description: Payment accepted and processed.
+ *       400:
+ *         description: Invalid payload.
  */
 
 /**
