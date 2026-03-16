@@ -17,11 +17,29 @@ export const buildApp = () => {
   const correlationMiddleware = createRequestIdMiddleware();
   const openApiSpec = buildOpenApiSpec();
 
+  const allowedOrigins = env.CORS_ORIGINS_LIST.filter((origin) => origin && origin !== '*');
+  if (allowedOrigins.length !== env.CORS_ORIGINS_LIST.length) {
+    throw new Error('CORS_ORIGINS must not include wildcard (*) when credentials are enabled');
+  }
+
+  const corsOptions = {
+    origin: allowedOrigins,
+    credentials: true,
+  };
+
+  const normalizeError = (error) => {
+    const normalized = error?.error || error;
+    return {
+      code: String(normalized?.code || 'INTERNAL_ERROR'),
+      message: String(normalized?.message || 'Unexpected error'),
+    };
+  };
+
   app.set('trust proxy', env.TRUST_PROXY);
   app.use(correlationMiddleware);
   app.use(httpLogger);
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGINS_LIST }));
+  app.use(cors(corsOptions));
   app.use(express.json({ limit: env.BODY_LIMIT }));
 
   app.get('/v1/health', (_req, res) => {
@@ -45,7 +63,8 @@ export const buildApp = () => {
   app.use(buildApiRoutes({ grpcClients, authMiddleware }));
 
   app.use((error, _req, res, _next) => {
-    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message || 'Unexpected error' } });
+    const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+    res.status(statusCode).json({ success: false, error: normalizeError(error) });
   });
 
   return app;
