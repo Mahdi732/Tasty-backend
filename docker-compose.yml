@@ -64,6 +64,19 @@ services:
       - notification_data:/data/db
       - ./docker/mongo-init/notification-db.js:/docker-entrypoint-initdb.d/01-notification-db.js:ro
 
+  payment-db:
+    image: mongo:7
+    container_name: tasty-payment-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: payment_root
+      MONGO_INITDB_ROOT_PASSWORD: payment-root-pass-dev
+      MONGO_INITDB_DATABASE: tasty_payment
+    ports:
+      - '27032:27017'
+    volumes:
+      - payment_data:/data/db
+      - ./docker/mongo-init/payment-db.js:/docker-entrypoint-initdb.d/01-payment-db.js:ro
+
   redis:
     image: redis:7-alpine
     container_name: tasty-redis
@@ -213,6 +226,25 @@ services:
     ports:
       - '4060:4060'
 
+  payment-service:
+    build:
+      context: .
+      dockerfile: paymentService/Dockerfile
+    container_name: tasty-payment-service
+    env_file:
+      - ./paymentService/.env
+    environment:
+      MONGO_URI: mongodb://tasty_payment_app:payment-app-pass-dev@payment-db:27017/tasty_payment?authSource=tasty_payment
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      RABBITMQ_EXCHANGE_EVENTS: tasty.domain.events
+      GRPC_PORT: 50056
+    depends_on:
+      - payment-db
+      - rabbitmq
+    restart: unless-stopped
+    ports:
+      - '4050:4050'
+
   api-gateway:
     build:
       context: .
@@ -223,12 +255,14 @@ services:
     environment:
       NOTIFICATION_SOCKET_TARGET: http://notification-service:4003
       USER_HTTP_BASE_URL: http://user-service:4000
+      PAYMENT_HTTP_BASE_URL: http://payment-service:4050
     depends_on:
       - user-service
       - restaurant-service
       - order-service
       - face-recognition-service
       - notification-service
+      - payment-service
     restart: unless-stopped
     ports:
       - '443:443'
@@ -239,4 +273,5 @@ volumes:
   restaurant_data:
   face_data:
   notification_data:
+  payment_data:
   redis_data:
