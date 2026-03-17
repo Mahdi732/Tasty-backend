@@ -306,6 +306,51 @@ export class OrderService {
     }, headers);
   }
 
+  async onOrderPaymentSucceeded(event, headers = {}) {
+    if (await this.processedEventRepository.isProcessed(headers.eventId)) return;
+
+    const targetOrderId = event.orderId || event.resourceId;
+    const order = await this.orderRepository.findById(targetOrderId);
+    if (!order) return;
+
+    const now = new Date();
+    const updated = await this.orderRepository.updateById(order._id, {
+      orderStatus: ORDER_STATUS.PAID,
+      'payment.status': PAYMENT_STATUS.PAID,
+      'payment.providerRef': event.providerRef || null,
+      'payment.lastPaymentEventId': headers.eventId || null,
+    });
+
+    await this.processedEventRepository.markProcessed(headers.eventId, 'payment.order.success');
+
+    await this.paymentSkeletonService.emitStatusChanged({
+      orderId: String(updated._id),
+      paymentStatus: PAYMENT_STATUS.PAID,
+    }, headers);
+
+    await this.rabbitBus.publishEvent(EVENTS.ORDER_PAID, {
+      orderId: String(updated._id),
+      restaurantId: updated.restaurantId,
+      userId: updated.userId,
+      total: updated.totals.total,
+    }, headers);
+
+    if (updated.orderType === ORDER_TYPE.DELIVERY) {
+      await this.rabbitBus.publishEvent(EVENTS.ORDER_DRIVER_ARRIVED, {
+        orderId: String(updated._id),
+        userId: updated.userId,
+        restaurantId: updated.restaurantId,
+        driverId: event.driverId || 'SYSTEM_PAYMENT_AUTOPILOT',
+        arrivedAt: now.toISOString(),
+        qrExpiresAt: updated.qr?.expiresAt ? new Date(updated.qr.expiresAt).toISOString() : null,
+        phoneNumber: event.phoneNumber || null,
+        pushToken: event.pushToken || null,
+        idNumberMasked: event.idNumberMasked || 'UNKNOWN',
+        debtAmount: event.debtAmount ?? updated.totals?.total ?? 0,
+      }, headers);
+    }
+  }
+
   async processExpiredQrOrders({ limit = 200 } = {}) {
     const now = new Date();
     const expiredOrders = await this.orderRepository.findExpiredUnscanned(now, limit);
