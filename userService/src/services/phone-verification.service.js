@@ -72,7 +72,8 @@ export class PhoneVerificationService {
     await this.enforceSendRateLimit(user.id, normalizedPhone, context.ipAddress);
     await this.enforceSendCooldown(user.id);
 
-    const otpCode = this.otpGenerator();
+    // In local/dev smoke tests, use deterministic OTP to avoid relying on SMS providers.
+    const otpCode = this.env.EXPOSE_VERIFICATION_CODES ? '1234' : this.otpGenerator();
     const expiresAt = new Date(Date.now() + this.env.PHONE_VERIFICATION_CODE_TTL_SECONDS * 1000);
 
     await this.phoneVerificationRepository.upsertActiveCode({
@@ -106,6 +107,10 @@ export class PhoneVerificationService {
       ipAddress: context.ipAddress,
       requestId: context.requestId,
     });
+
+    if (this.env.EXPOSE_VERIFICATION_CODES) {
+      return { sent: true, code: otpCode };
+    }
 
     return { sent: true };
   }
