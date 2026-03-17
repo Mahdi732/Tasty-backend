@@ -6,9 +6,6 @@ export class RestaurantRepository {
   buildPublicFilter({ citySlug, query }) {
     const filter = {
       status: 'ACTIVE',
-      visibility: 'PUBLIC',
-      'subscription.status': 'ACTIVE',
-      'verification.status': 'VERIFIED',
       deletedAt: null,
     };
     if (citySlug) filter['location.citySlug'] = citySlug;
@@ -72,6 +69,38 @@ export class RestaurantRepository {
 
   softDelete(id) {
     return this.updateById(id, { deletedAt: new Date() });
+  }
+
+  async activateByOwnerIds(ownerIds = []) {
+    if (!ownerIds.length) return { matchedCount: 0, modifiedCount: 0 };
+
+    const now = new Date();
+    const result = await this.model.updateMany(
+      {
+        createdBy: { $in: ownerIds.map(String) },
+        status: { $ne: 'SUSPENDED' },
+        deletedAt: null,
+      },
+      {
+        $set: {
+          status: 'ACTIVE',
+          visibility: 'PUBLIC',
+          activationBlockers: [],
+          activatedAt: now,
+          suspendedAt: null,
+          suspendedReason: null,
+          'subscription.status': 'ACTIVE',
+          'verification.status': 'VERIFIED',
+          'verification.verifiedAt': now,
+          'verification.reviewNotes': 'Auto-verified from successful subscription payment event',
+        },
+      }
+    );
+
+    return {
+      matchedCount: result.matchedCount || 0,
+      modifiedCount: result.modifiedCount || 0,
+    };
   }
 }
 
