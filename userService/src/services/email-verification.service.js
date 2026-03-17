@@ -74,7 +74,8 @@ export class EmailVerificationService {
       return { sent: true };
     }
 
-    const otpCode = this.otpGenerator();
+    // In local/dev smoke tests, use deterministic OTP to avoid relying on email providers.
+    const otpCode = this.env.EXPOSE_VERIFICATION_CODES ? '123456' : this.otpGenerator();
     const expiresAt = new Date(Date.now() + this.env.EMAIL_VERIFICATION_CODE_TTL_SECONDS * 1000);
 
     await this.emailVerificationRepository.upsertActiveCode({
@@ -99,6 +100,10 @@ export class EmailVerificationService {
       email: normalizedEmail,
       ipAddress: context.ipAddress,
     });
+
+    if (this.env.EXPOSE_VERIFICATION_CODES) {
+      return { sent: true, code: otpCode };
+    }
 
     return { sent: true };
   }
