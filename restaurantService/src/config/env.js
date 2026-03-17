@@ -23,6 +23,8 @@ const envSchema = z.object({
   RABBITMQ_ENABLED: z.coerce.boolean().default(false),
   RABBITMQ_URL: z.string().default('amqp://localhost:5672'),
   RABBITMQ_EXCHANGE_EVENTS: z.string().default('tasty.domain.events'),
+  RABBITMQ_QUEUE_PAYMENT_SUBSCRIPTION: z.string().default('restaurant.payment.subscription.events.q'),
+  RABBITMQ_ROUTING_KEY_PAYMENT_SUBSCRIPTION_SUCCESS: z.string().default('payment.subscription.success'),
 
   REQUIRE_VERIFICATION_FOR_ACTIVATION: z.coerce.boolean().default(true),
   DEFAULT_RESTAURANT_CURRENCY: z.string().default('USD'),
