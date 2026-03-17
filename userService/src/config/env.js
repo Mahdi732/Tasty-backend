@@ -210,6 +210,7 @@ const envSchema = z.object({
   PHONE_VERIFICATION_SEND_WINDOW_SECONDS: z.coerce.number().int().positive().default(3600),
   PHONE_VERIFICATION_PHONE_MAX_PER_WINDOW: z.coerce.number().int().positive().default(5),
   PHONE_VERIFICATION_HASH_SECRET: z.string().optional().default(''),
+  EXPOSE_VERIFICATION_CODES: envBoolean().default(false),
 
   SMS_PROVIDER: z.enum(['noop', 'twilio', 'infobip']).default('noop'),
   SMS_FROM_PHONE: z.string().optional().default(''),
