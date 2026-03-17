@@ -18,6 +18,7 @@ export class EnforcementNotificationService {
     pushSender,
     smsSender,
     templates,
+    realtimeGateway,
     queue,
     worker,
     redis,
@@ -30,6 +31,7 @@ export class EnforcementNotificationService {
     this.pushSender = pushSender;
     this.smsSender = smsSender;
     this.templates = templates;
+    this.realtimeGateway = realtimeGateway;
 
     this.redis = redis || new IORedis(this.env.REDIS_URL, { maxRetriesPerRequest: null });
     this.queue = queue || new Queue(this.env.ENFORCEMENT_QUEUE_NAME, { connection: this.redis });
@@ -189,6 +191,12 @@ export class EnforcementNotificationService {
         }
 
         await this.timerRepository.markWarningSent(job.data.orderId, new Date());
+        this.realtimeGateway?.emitTimerUpdate({
+          userId: job.data.userId,
+          orderId: job.data.orderId,
+          event: 'timer.update',
+          status: 'warning',
+        });
         await this.rabbitBus.publishEvent(
           EVENTS.TIMER_3_MINUTES_LEFT,
           {
@@ -228,6 +236,13 @@ export class EnforcementNotificationService {
             causationId: job.data.causationId || undefined,
           }
         );
+
+        this.realtimeGateway?.emitOrderExpired({
+          userId: job.data.userId,
+          orderId: job.data.orderId,
+          debtAmount: job.data.debtAmount || 0,
+          idNumberMasked: job.data.idNumberMasked || 'UNKNOWN',
+        });
 
         this.logger.info({ orderId: job.data.orderId }, 'enforcement_expire_timer_elapsed');
       }
