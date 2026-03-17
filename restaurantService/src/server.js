@@ -1,11 +1,15 @@
 import { buildApp, createContainer } from './app.js';
 import { connectMongo, createRedis, env, logger } from './config/index.js';
 import { DomainEventPublisher } from './messaging/domain-event.publisher.js';
+import { PaymentConsumer } from './messaging/payment.consumer.js';
 import { startGrpcServer } from './grpc/server.js';
+import { RestaurantModel } from './models/restaurant.model.js';
+import { RestaurantRepository } from './repositories/restaurant.repository.js';
 
 let server;
 let redisClient;
 let eventPublisher;
+let paymentConsumer;
 let container;
 let grpcServer;
 
@@ -23,6 +27,18 @@ const start = async () => {
       logger,
     });
     await eventPublisher.connect();
+
+    const restaurantRepository = new RestaurantRepository(RestaurantModel);
+    paymentConsumer = new PaymentConsumer({
+      url: env.RABBITMQ_URL,
+      exchange: env.RABBITMQ_EXCHANGE_EVENTS,
+      queueName: env.RABBITMQ_QUEUE_PAYMENT_SUBSCRIPTION,
+      routingKey: env.RABBITMQ_ROUTING_KEY_PAYMENT_SUBSCRIPTION_SUCCESS,
+      restaurantRepository,
+      logger,
+    });
+    await paymentConsumer.connect();
+    await paymentConsumer.start();
   }
 
   container = await createContainer({ redisClient, domainEventPublisher: eventPublisher });
@@ -52,6 +68,9 @@ const shutdown = async (signal) => {
   }
   if (eventPublisher) {
     await eventPublisher.close();
+  }
+  if (paymentConsumer) {
+    await paymentConsumer.close();
   }
   process.exit(0);
 };
