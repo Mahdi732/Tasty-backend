@@ -1,0 +1,24 @@
+{
+  "name": "tasty-backend",
+  "private": true,
+  "workspaces": [
+    "common",
+    "apiGateway",
+    "userService",
+    "orderService",
+    "restaurantService",
+    "faceRecognitionService",
+    "notificationService",
+    "paymentService"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:gateway": "npm --workspace apiGateway run dev",
+    "dev:user": "npm --workspace userService run dev",
+    "dev:order": "npm --workspace orderService run dev",
+    "dev:restaurant": "npm --workspace restaurantService run dev",
+    "dev:face": "npm --workspace faceRecognitionService run dev",
+    "dev:notification": "npm --workspace notificationService run dev"
+  }
+}
