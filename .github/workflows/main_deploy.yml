@@ -48,8 +48,8 @@ jobs:
           echo "Working dir: $(pwd)"
           ls -la
 
-          echo "Using npm install for maximum compatibility across services."
-          npm install --no-audit --no-fund
+          echo "Using npm install with dev dependencies for service-level lint/test compatibility."
+          npm install --include=dev --workspaces=false --no-audit --no-fund
 
       - name: Run lint
         working-directory: ${{ matrix.path }}

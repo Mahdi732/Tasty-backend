@@ -119,7 +119,11 @@ describe('EnforcementNotificationService', () => {
     });
 
     expect(smsSender.send).toHaveBeenCalledTimes(1);
-    expect(rabbitBus.publishEvent).toHaveBeenCalledWith('timer.3_minutes_left', expect.any(Object));
+    expect(rabbitBus.publishEvent).toHaveBeenCalledWith(
+      'timer.3_minutes_left',
+      expect.any(Object),
+      expect.any(Object),
+    );
   });
 
   it('Test B: race condition - qr.scanned before expiry suppresses fraud notification', async () => {
