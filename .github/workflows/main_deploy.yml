@@ -67,6 +67,15 @@ jobs:
 
       - name: Run unit tests
         working-directory: ${{ matrix.path }}
+        env:
+          NODE_ENV: test
+          INTERNAL_SERVICE_SECRET: test-internal-service-secret-123
+          JWT_JWKS_URI: http://localhost:4000/.well-known/jwks.json
+          JWT_ISSUER: test-issuer
+          JWT_AUDIENCE: test-audience
+          QR_SIGNING_SECRET: test-qr-signing-secret-123
+          MONGOMS_DISABLE_POSTINSTALL: "1"
+          MONGOMS_SKIP_POSTINSTALL: "1"
         run: npm run test --if-present
 
   build_changed_docker:

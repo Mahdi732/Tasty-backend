@@ -28,6 +28,7 @@ export const setupTestApp = async () => {
   process.env.BODY_LIMIT = '1mb';
   process.env.TRUST_PROXY = '1';
   process.env.REQUEST_TIMEOUT_MS = '10000';
+  process.env.INTERNAL_SERVICE_SECRET = 'test-internal-service-secret-123';
   process.env.JWT_JWKS_URI = 'http://localhost:4000/.well-known/jwks.json';
   process.env.JWT_ISSUER = 'test-issuer';
   process.env.JWT_AUDIENCE = 'test-aud';
@@ -51,8 +52,14 @@ export const setupTestApp = async () => {
 };
 
 export const teardownTestApp = async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.disconnect();
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.connection.dropDatabase();
+  }
+
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+
   if (mongoServer) {
     await mongoServer.stop();
   }

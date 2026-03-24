@@ -3,6 +3,7 @@ import request from 'supertest';
 describe('Order service routes', () => {
   beforeAll(() => {
     process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27020/order-service';
+    process.env.INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET || 'test-internal-service-secret-123';
     process.env.JWT_JWKS_URI = process.env.JWT_JWKS_URI || 'http://localhost:4000/.well-known/jwks.json';
     process.env.JWT_ISSUER = process.env.JWT_ISSUER || 'tasty-auth';
     process.env.JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'tasty-clients';
