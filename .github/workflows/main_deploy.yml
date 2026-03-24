@@ -1,0 +1,138 @@
+name: Backend CI/CD Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Lint and Unit Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: apiGateway
+            path: apiGateway
+          - name: userService
+            path: userService
+          - name: orderService
+            path: orderService
+          - name: restaurantService
+            path: restaurantService
+          - name: faceRecognitionService
+            path: faceRecognitionService
+          - name: notificationService
+            path: notificationService
+          - name: paymentService
+            path: paymentService
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Run lint
+        working-directory: ${{ matrix.path }}
+        run: npm run lint --if-present
+
+      - name: Run unit tests
+        working-directory: ${{ matrix.path }}
+        run: npm run test --if-present
+
+  build_changed_docker:
+    name: Build Docker Images For Changed Services
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed files
+        run: |
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            git fetch --depth=2 origin main
+            BASE=$(git rev-parse HEAD~1)
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          git diff --name-only "$BASE" "${{ github.sha }}" > changed.txt
+          echo "Changed files:"
+          cat changed.txt
+
+      - name: Build changed backend images
+        run: |
+          set -e
+          touched() {
+            grep -Eq "$1" changed.txt
+          }
+
+          if touched '^(apiGateway|common)/'; then
+            docker build -f apiGateway/Dockerfile .
+          fi
+
+          if touched '^(userService|common)/'; then
+            docker build -f userService/Dockerfile .
+          fi
+
+          if touched '^(orderService|common)/'; then
+            docker build -f orderService/Dockerfile .
+          fi
+
+          if touched '^(restaurantService|common)/'; then
+            docker build -f restaurantService/Dockerfile .
+          fi
+
+          if touched '^(faceRecognitionService|common)/'; then
+            docker build -f faceRecognitionService/Dockerfile .
+          fi
+
+          if touched '^(notificationService|common)/'; then
+            docker build -f notificationService/Dockerfile .
+          fi
+
+          if touched '^(paymentService|common)/'; then
+            docker build -f paymentService/Dockerfile .
+          fi
+
+  deploy_render:
+    name: Deploy To Render
+    runs-on: ubuntu-latest
+    needs: build_changed_docker
+
+    steps:
+      - name: Trigger configured deploy hooks
+        env:
+          RENDER_DEPLOY_HOOK_API_GATEWAY: ${{ secrets.RENDER_DEPLOY_HOOK_API_GATEWAY }}
+          RENDER_DEPLOY_HOOK_USER_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_USER_SERVICE }}
+          RENDER_DEPLOY_HOOK_ORDER_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_ORDER_SERVICE }}
+          RENDER_DEPLOY_HOOK_RESTAURANT_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_RESTAURANT_SERVICE }}
+          RENDER_DEPLOY_HOOK_FACE_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_FACE_SERVICE }}
+          RENDER_DEPLOY_HOOK_NOTIFICATION_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_NOTIFICATION_SERVICE }}
+          RENDER_DEPLOY_HOOK_PAYMENT_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_PAYMENT_SERVICE }}
+        run: |
+          set -e
+          post_if_set() {
+            local hook="$1"
+            if [ -n "$hook" ]; then
+              curl -fsS -X POST "$hook"
+            fi
+          }
+
+          post_if_set "$RENDER_DEPLOY_HOOK_API_GATEWAY"
+          post_if_set "$RENDER_DEPLOY_HOOK_USER_SERVICE"
+          post_if_set "$RENDER_DEPLOY_HOOK_ORDER_SERVICE"
+          post_if_set "$RENDER_DEPLOY_HOOK_RESTAURANT_SERVICE"
+          post_if_set "$RENDER_DEPLOY_HOOK_FACE_SERVICE"
+          post_if_set "$RENDER_DEPLOY_HOOK_NOTIFICATION_SERVICE"
+          post_if_set "$RENDER_DEPLOY_HOOK_PAYMENT_SERVICE"

@@ -4,6 +4,10 @@ Last updated: 2026-03-24
 
 This file is the operational guide for the backend: architecture, lifecycle, frontend bridge, Render deployment, CI/CD, and runbook details.
 
+Production env variable checklist:
+
+- PRODUCTION_ENV_CHECKLIST.md
+
 ## 1) Where The Analysis Is
 
 You currently have two documentation layers:
@@ -152,11 +156,11 @@ Why this matters:
 
 Blueprint file already exists:
 
-- ../render.yaml
+- render.yaml
 
 Workflow file already exists:
 
-- ../.github/workflows/main_deploy.yml
+- .github/workflows/main_deploy.yml
 
 ### Step A: Push current code to GitHub
 
@@ -169,7 +173,6 @@ Workflow file already exists:
 1. In Render dashboard, create a new Blueprint from your GitHub repo.
 2. Select root render.yaml.
 3. Confirm services detected:
-   - tasty-web
    - tasty-api-gateway
    - user-service
    - order-service
@@ -217,7 +220,7 @@ Update public origin and callback values to real onrender domains:
 ### Step E: Verify health and internal connectivity
 
 1. Confirm apiGateway is publicly reachable.
-2. Confirm web can call apiGateway.
+2. Confirm clients can call apiGateway.
 3. Confirm apiGateway can reach private services by internal hostnames.
 4. Confirm RabbitMQ, Redis, Mongo are reachable from services.
 
@@ -230,7 +233,7 @@ Workflow:
 On push to main it does:
 
 1. Validate
-- npm ci per app/service
+- npm ci per backend service
 - lint where script exists
 - tests where script exists
 
@@ -244,7 +247,6 @@ On push to main it does:
 
 Required GitHub secrets:
 
-- RENDER_DEPLOY_HOOK_WEB
 - RENDER_DEPLOY_HOOK_API_GATEWAY
 - RENDER_DEPLOY_HOOK_USER_SERVICE
 - RENDER_DEPLOY_HOOK_ORDER_SERVICE

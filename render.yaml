@@ -1,0 +1,172 @@
+services:
+  - type: web
+    name: tasty-api-gateway
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: apiGateway/Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "443"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: USER_GRPC_TARGET
+        value: user-service:50051
+      - key: ORDER_GRPC_TARGET
+        value: order-service:50052
+      - key: RESTAURANT_GRPC_TARGET
+        value: restaurant-service:50053
+      - key: FACE_GRPC_TARGET
+        value: face-recognition-service:50054
+      - key: NOTIFICATION_GRPC_TARGET
+        value: notification-service:50055
+      - key: PAYMENT_HTTP_BASE_URL
+        value: http://payment-service:4050
+      - key: NOTIFICATION_SOCKET_TARGET
+        value: http://notification-service:4003
+      - key: JWT_ISSUER
+        sync: false
+      - key: JWT_AUDIENCE
+        sync: false
+      - key: JWT_PUBLIC_KEY
+        sync: false
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
+
+  - type: pserv
+    name: user-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: userService/Dockerfile
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb://tasty-mongo:27017/tasty_user
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: tasty-redis
+          property: connectionString
+      - key: RABBITMQ_URL
+        value: amqp://tasty-rabbitmq:5672
+      - key: FACE_SERVICE_BASE_URL
+        value: http://face-recognition-service:4030
+      - key: FACE_SERVICE_GRPC_TARGET
+        value: face-recognition-service:50054
+
+  - type: pserv
+    name: order-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: orderService/Dockerfile
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb://tasty-mongo:27017/tasty_order
+      - key: RABBITMQ_URL
+        value: amqp://tasty-rabbitmq:5672
+      - key: JWT_JWKS_URI
+        sync: false
+      - key: FACE_SERVICE_BASE_URL
+        value: http://face-recognition-service:4030
+
+  - type: pserv
+    name: restaurant-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: restaurantService/Dockerfile
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb://tasty-mongo:27017/tasty_restaurant
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: tasty-redis
+          property: connectionString
+      - key: RABBITMQ_URL
+        value: amqp://tasty-rabbitmq:5672
+
+  - type: pserv
+    name: face-recognition-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: faceRecognitionService/Dockerfile
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb://tasty-mongo:27017/tasty_face
+      - key: PYTHON_EMBEDDER_URL
+        value: http://python-embedder:8081
+
+  - type: pserv
+    name: notification-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: notificationService/Dockerfile
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb://tasty-mongo:27017/tasty_notification
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: tasty-redis
+          property: connectionString
+      - key: RABBITMQ_URL
+        value: amqp://tasty-rabbitmq:5672
+
+  - type: pserv
+    name: payment-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: paymentService/Dockerfile
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb://tasty-mongo:27017/tasty_payment
+      - key: RABBITMQ_URL
+        value: amqp://tasty-rabbitmq:5672
+
+  - type: pserv
+    name: tasty-mongo
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: docker/mongo/Dockerfile
+    plan: starter
+    disk:
+      name: mongo-data
+      mountPath: /data/db
+      sizeGB: 10
+
+  - type: pserv
+    name: tasty-rabbitmq
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: docker/rabbitmq/Dockerfile
+    plan: starter
+    disk:
+      name: rabbitmq-data
+      mountPath: /var/lib/rabbitmq
+      sizeGB: 2
+
+  - type: keyvalue
+    name: tasty-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
