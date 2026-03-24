@@ -40,9 +40,16 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ matrix.path }}
         run: |
+          set -e
+          echo "Service: ${{ matrix.name }}"
+          echo "Working dir: $(pwd)"
+          ls -la
+
           if [ -f package-lock.json ]; then
-            npm ci
+            echo "Found package-lock.json. Trying npm ci..."
+            npm ci || (echo "npm ci failed in ${{ matrix.path }}; falling back to npm install" && npm install)
           else
+            echo "No package-lock.json found. Using npm install."
             npm install
           fi
 
