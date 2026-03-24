@@ -86,15 +86,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Detect changed files
         run: |
-          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            git fetch --depth=2 origin main
+          set -e
+          BEFORE_SHA="${{ github.event.before }}"
+
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
             BASE=$(git rev-parse HEAD~1)
+          elif git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            BASE="$BEFORE_SHA"
           else
-            BASE="${{ github.event.before }}"
+            echo "Before SHA not found locally: $BEFORE_SHA"
+            git fetch origin main --prune
+            BASE=$(git merge-base HEAD origin/main || git rev-parse HEAD~1)
           fi
+
+          echo "Using base commit: $BASE"
           git diff --name-only "$BASE" "${{ github.sha }}" > changed.txt
           echo "Changed files:"
           cat changed.txt
