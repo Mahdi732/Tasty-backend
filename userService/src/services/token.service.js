@@ -67,14 +67,16 @@ export class TokenService {
       );
     }
 
+    const isActive = String(user.status || '').toUpperCase() === 'ACTIVE';
+
     const accessToken = await this.jwtSigner.signAccessToken({
       sub: user.id,
       roles: user.roles,
       status: user.status,
       verification: {
-        email: Boolean(user.isEmailVerified),
-        phone: Boolean(user.isPhoneVerified),
-        face: Boolean(user.isFaceVerified),
+        email: isActive ? true : Boolean(user.isEmailVerified),
+        phone: isActive ? true : Boolean(user.isPhoneVerified),
+        face: isActive ? true : Boolean(user.isFaceVerified),
       },
       sid: sessionId,
       jti: uuidv4(),
