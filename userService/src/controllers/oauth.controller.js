@@ -19,6 +19,20 @@ export class OAuthController {
     this.oauthService = oauthService;
   }
 
+  buildWebCallbackUrl(provider, params = {}) {
+    const fallbackBase = `${this.env.WEB_APP_URL}/oauth/callback`;
+    const redirectUrl = new URL(fallbackBase);
+    redirectUrl.searchParams.set('provider', provider);
+
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && String(value).length) {
+        redirectUrl.searchParams.set(key, String(value));
+      }
+    }
+
+    return redirectUrl;
+  }
+
   start = async (req, res) => {
     const result = await this.oauthService.start(req.params.provider, {
       mode: req.query.mode,
@@ -30,30 +44,61 @@ export class OAuthController {
   };
 
   callback = async (req, res) => {
-    const result = await this.oauthService.callback(
-      req.params.provider,
-      { code: req.query.code, state: req.query.state },
-      {
-        ipAddress: req.clientIp,
-        userAgent: req.userAgent,
-      }
-    );
+    if (req.query.error) {
+      const redirectUrl = this.buildWebCallbackUrl(req.params.provider, {
+        mode: 'login',
+        error: req.query.error,
+      });
+      return res.redirect(302, redirectUrl.toString());
+    }
+
+    let result;
+    try {
+      result = await this.oauthService.callback(
+        req.params.provider,
+        { code: req.query.code, state: req.query.state },
+        {
+          ipAddress: req.clientIp,
+          userAgent: req.userAgent,
+        }
+      );
+    } catch (error) {
+      const redirectUrl = this.buildWebCallbackUrl(req.params.provider, {
+        mode: 'login',
+        error: error?.code || 'OAUTH_PROVIDER_ERROR',
+      });
+      return res.redirect(302, redirectUrl.toString());
+    }
 
     if (result.refreshToken) {
       attachRefreshToken(res, this.env, result.refreshToken);
     }
 
     const oauthContext = result.oauthContext || {};
-    const shouldRedirectToWeb = oauthContext.mode === 'login' && oauthContext.platform === 'web';
+    const shouldRedirectToWeb = oauthContext.platform === 'web';
 
     if (shouldRedirectToWeb) {
       const redirectBase = oauthContext.appRedirect || `${this.env.WEB_APP_URL}/oauth/callback`;
       const redirectUrl = new URL(redirectBase);
       redirectUrl.searchParams.set('provider', req.params.provider);
-      redirectUrl.searchParams.set('accessToken', result.accessToken || '');
+
+      if (oauthContext.mode) {
+        redirectUrl.searchParams.set('mode', oauthContext.mode);
+      }
+
+      if (result.accessToken) {
+        redirectUrl.searchParams.set('accessToken', result.accessToken || '');
+        redirectUrl.searchParams.set('access_token', result.accessToken || '');
+      }
+
       if (result.refreshToken) {
         redirectUrl.searchParams.set('refreshToken', result.refreshToken);
       }
+
+      if (result.linked === true) {
+        redirectUrl.searchParams.set('linked', 'true');
+      }
+
       return res.redirect(302, redirectUrl.toString());
     }
 
@@ -67,6 +112,7 @@ export class OAuthController {
     const result = await this.oauthService.start(req.params.provider, {
       mode: 'link',
       platform: req.body?.platform || 'web',
+      appRedirect: req.body?.appRedirect,
       currentUserId: req.auth.userId,
     });
     return ok(res, result);

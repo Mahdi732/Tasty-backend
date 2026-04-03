@@ -146,7 +146,11 @@ export class OrderService {
     });
 
     const updated = await this.orderRepository.updateById(order._id, {
-      qr: { tokenHash: finalQr.tokenHash, expiresAt: finalQr.expiresAt },
+      qr: {
+        token: finalQr.rawToken,
+        tokenHash: finalQr.tokenHash,
+        expiresAt: finalQr.expiresAt,
+      },
     });
 
     await this.rabbitBus.publishEvent(EVENTS.ORDER_CREATED, {
@@ -190,8 +194,80 @@ export class OrderService {
     return { ...updated.toObject(), qrToken: finalQr.rawToken };
   }
 
+  async cancelMyOrder(orderId, auth, headers = {}) {
+    const order = await this.orderRepository.findById(orderId);
+    if (!order) {
+      throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Order not found');
+    }
+
+    const isSuperadmin = auth.roles?.includes(ROLES.SUPERADMIN);
+    if (!isSuperadmin && String(order.userId) !== String(auth.userId)) {
+      throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'You are not allowed to cancel this order');
+    }
+
+    if (order.qr?.scannedAt) {
+      throw new ApiError(409, ERROR_CODES.CONFLICT, 'Scanned orders cannot be cancelled');
+    }
+
+    if ([ORDER_STATUS.EXPIRED, ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED].includes(order.orderStatus)) {
+      throw new ApiError(409, ERROR_CODES.CONFLICT, 'Order cannot be cancelled in current status');
+    }
+
+    if (order.debt?.status === DEBT_STATUS.OUTSTANDING) {
+      throw new ApiError(409, ERROR_CODES.CONFLICT, 'Order with outstanding debt cannot be cancelled');
+    }
+
+    const now = new Date();
+    const updated = await this.orderRepository.updateById(order._id, {
+      orderStatus: ORDER_STATUS.CANCELLED,
+      riskFlags: {
+        qrExpiredBlacklistTriggered: false,
+        temporaryReview: false,
+      },
+      debt: {
+        status: order.debt?.status === DEBT_STATUS.CLEARED ? DEBT_STATUS.CLEARED : DEBT_STATUS.NONE,
+        amount: 0,
+        recordedAt: order.debt?.recordedAt || null,
+        clearedAt: order.debt?.clearedAt || now,
+      },
+    });
+
+    await this.rabbitBus.publishEvent(EVENTS.ORDER_CANCELLED, {
+      orderId: String(updated._id),
+      restaurantId: String(updated.restaurantId),
+      userId: String(updated.userId),
+      cancelledBy: String(auth.userId),
+      reason: 'USER_REQUESTED',
+    }, headers);
+
+    return updated;
+  }
+
   listMyOrders(auth) {
     return this.orderRepository.listByUser(auth.userId);
+  }
+
+  async getMyDebtStatus(auth) {
+    await this.orderRepository.clearPaidOutstandingDebtByUser(auth.userId);
+
+    const debts = await this.orderRepository.listOutstandingDebtByUser(auth.userId);
+    const totalOutstandingAmount = debts.reduce((sum, order) => {
+      const amount = Number(order?.debt?.amount || 0);
+      return Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
+
+    return {
+      userId: auth.userId,
+      hasOutstandingDebt: debts.length > 0,
+      totalOutstandingAmount,
+      debts: debts.map((order) => ({
+        orderId: String(order._id),
+        restaurantId: String(order.restaurantId || ''),
+        amount: Number(order?.debt?.amount || 0),
+        recordedAt: order?.debt?.recordedAt || null,
+        orderStatus: order.orderStatus || null,
+      })),
+    };
   }
 
   async listRestaurantOrders(restaurantId, auth) {
@@ -285,10 +361,22 @@ export class OrderService {
     const order = await this.orderRepository.findById(event.resourceId);
     if (!order) return;
 
+    const now = new Date();
     const updated = await this.orderRepository.updateById(order._id, {
+      orderStatus: ORDER_STATUS.PAID,
       'payment.status': PAYMENT_STATUS.PAID,
       'payment.providerRef': event.providerRef || null,
       'payment.lastPaymentEventId': headers.eventId || null,
+      debt: {
+        status: DEBT_STATUS.CLEARED,
+        amount: 0,
+        recordedAt: order.debt?.recordedAt || null,
+        clearedAt: now,
+      },
+      riskFlags: {
+        qrExpiredBlacklistTriggered: false,
+        temporaryReview: false,
+      },
     });
 
     await this.processedEventRepository.markProcessed(headers.eventId, 'payment.succeeded');
@@ -319,6 +407,16 @@ export class OrderService {
       'payment.status': PAYMENT_STATUS.PAID,
       'payment.providerRef': event.providerRef || null,
       'payment.lastPaymentEventId': headers.eventId || null,
+      debt: {
+        status: DEBT_STATUS.CLEARED,
+        amount: 0,
+        recordedAt: order.debt?.recordedAt || null,
+        clearedAt: now,
+      },
+      riskFlags: {
+        qrExpiredBlacklistTriggered: false,
+        temporaryReview: false,
+      },
     });
 
     await this.processedEventRepository.markProcessed(headers.eventId, 'payment.order.success');

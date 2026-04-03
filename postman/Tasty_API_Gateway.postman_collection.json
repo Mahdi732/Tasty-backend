@@ -1,0 +1,159 @@
+{
+  "info": {
+    "name": "Tasty API Gateway",
+    "description": "Gateway-only collection for auth, restaurant, order, payment, manager, and ops testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "4aa3bc74-f47c-45b7-bebc-a869dd59fc91"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"nickname\": \"postman-user\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "const token = json?.data?.accessToken || json?.data?.access_token || json?.accessToken || json?.access_token || '';",
+                  "if (token) { pm.environment.set('accessToken', token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/api/v1/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restaurants Public",
+      "item": [
+        {
+          "name": "List Restaurants",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/restaurants"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders and Payments",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "const orderId = json?.data?.order_id || json?.data?.orderId || '';",
+                  "const qr = json?.data?.qr_token || json?.data?.qrToken || '';",
+                  "if (orderId) pm.environment.set('orderId', orderId);",
+                  "if (qr) pm.environment.set('qrToken', qr);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restaurantId\": \"{{restaurantId}}\",\n  \"orderType\": \"DELIVERY\",\n  \"paymentMethod\": \"PAY_ON_APP\",\n  \"restaurantSnapshot\": {\n    \"name\": \"Demo\",\n    \"slug\": \"demo\",\n    \"citySlug\": \"cairo\",\n    \"currency\": \"USD\"\n  },\n  \"fulfillment\": {\n    \"mode\": \"DELIVERY\",\n    \"deliveryAddress\": \"Test street\"\n  },\n  \"items\": [\n    {\n      \"menuItemId\": \"demo-item\",\n      \"name\": \"Demo Item\",\n      \"unitPrice\": 10,\n      \"quantity\": 1\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Pay Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/payments/order",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"demo-user\",\n  \"orderId\": \"{{orderId}}\",\n  \"amount\": 10,\n  \"currency\": \"USD\",\n  \"payment\": {\n    \"type\": \"CARD\",\n    \"token\": \"tok_demo_visa_4242\"\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ops",
+      "item": [
+        {
+          "name": "Scan QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/ops/orders/qr/scan",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrToken\": \"{{qrToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Mark Driver Arrived",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/driver-arrived",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"debtAmount\": 0\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

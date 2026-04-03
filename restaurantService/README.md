@@ -27,6 +27,19 @@ Production-grade Restaurant + Menu microservice.
    - `GET http://localhost:4010/health`
    - `GET http://localhost:4010/ready`
 
+## Manager onboarding and restaurant creation flow
+
+1. User account must have global `manager` role in Auth JWT.
+2. Create restaurant (manager route):
+   - Service direct: `POST http://localhost:4010/restaurants`
+   - Via Gateway: `POST https://localhost/api/v1/restaurants`
+3. Subscription for activation:
+   - `POST https://localhost/api/v1/payments/subscribe`
+   - Payload includes: `userId`, `restaurantId`, `planId`, `amount`, `currency`, `payment`
+4. Verification/subscription gating decides final visibility:
+   - If subscription is not active, restaurant remains `PENDING_SUBSCRIPTION`.
+   - Public visibility is only for `ACTIVE` restaurants.
+
 ## Architecture conclusion (Restaurant + Menu Service)
 
 This service now owns marketplace tenant isolation using restaurant membership mappings.

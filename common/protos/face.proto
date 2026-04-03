@@ -14,7 +14,7 @@ message CompareIdWithFaceRequest {
   string live_image_base64 = 2;
   string tenant_id = 3;
   string request_id = 4;
-}
+}                     
 
 message CompareIdWithFaceResponse {
   bool success = 1;

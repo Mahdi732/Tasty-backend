@@ -40,16 +40,29 @@ export const createAuthMiddleware = ({ env }) => {
   };
 };
 
-export const requireActiveAndFaceVerified = (req, res, next) => {
+const sendVerificationRequired = (res, message) => {
+  res.status(403).json({
+    success: false,
+    error: {
+      code: 'AUTH_VERIFICATION_REQUIRED',
+      message,
+    },
+  });
+};
+
+export const requireFullyVerifiedAccount = (req, res, next) => {
   if (req.auth?.status !== 'ACTIVE') {
-    res.status(403).json({ success: false, error: { code: 'AUTH_FORBIDDEN', message: 'Account must be ACTIVE' } });
+    sendVerificationRequired(res, 'Complete account verification before continuing');
     return;
   }
 
-  if (req.auth?.verification?.face !== true) {
-    res.status(403).json({ success: false, error: { code: 'AUTH_FORBIDDEN', message: 'Face activation is required before ordering' } });
+  if (req.auth?.verification?.email !== true || req.auth?.verification?.phone !== true || req.auth?.verification?.face !== true) {
+    sendVerificationRequired(res, 'Email, phone, and face/card verification are required before continuing');
     return;
   }
 
   next();
 };
+
+// Backward-compatible alias used by existing route wiring.
+export const requireActiveAndFaceVerified = requireFullyVerifiedAccount;

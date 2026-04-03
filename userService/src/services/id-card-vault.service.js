@@ -4,7 +4,11 @@ const ALGORITHM = 'aes-256-gcm';
 
 export class IdCardVaultService {
   constructor({ encryptionKey }) {
-    this.key = Buffer.from(encryptionKey, 'base64');
+    const decoded = Buffer.from(String(encryptionKey || ''), 'base64');
+    if (decoded.length !== 32) {
+      throw new Error('ID_CARD_ENCRYPTION_KEY must be a base64-encoded 32-byte key');
+    }
+    this.key = decoded;
   }
 
   encrypt(idCardBuffer) {

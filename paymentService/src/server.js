@@ -6,9 +6,41 @@ let server;
 let container;
 let grpcServer;
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const createContainerWithRetry = async () => {
+  const maxAttempts = 30;
+  const retryDelayMs = 2000;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await createContainer();
+    } catch (error) {
+      const isLastAttempt = attempt === maxAttempts;
+      logger.warn(
+        {
+          attempt,
+          maxAttempts,
+          delayMs: retryDelayMs,
+          err: error,
+        },
+        'payment_container_init_failed_retrying'
+      );
+
+      if (isLastAttempt) {
+        throw error;
+      }
+
+      await wait(retryDelayMs);
+    }
+  }
+
+  throw new Error('Payment container initialization failed unexpectedly');
+};
+
 const start = async () => {
   await connectMongo(env.MONGO_URI);
-  container = await createContainer();
+  container = await createContainerWithRetry();
 
   const app = await buildApp({ container });
   server = app.listen(env.PORT, () => {

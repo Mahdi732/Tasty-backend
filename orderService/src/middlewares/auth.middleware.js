@@ -12,10 +12,16 @@ export const authMiddleware = (jwtVerifier) => createJwtAuthMiddleware({
     }
   },
   onAuthenticated: async (req, payload) => {
-    if (payload?.status !== 'ACTIVE') {
+    if (
+      payload?.status !== 'ACTIVE'
+      || payload?.verification?.email !== true
+      || payload?.verification?.phone !== true
+      || payload?.verification?.face !== true
+    ) {
       throw new ApiError(403, ERROR_CODES.AUTH_FORBIDDEN, 'Complete account verification before accessing orders');
     }
     req.auth.status = payload?.status;
+    req.auth.verification = payload?.verification || {};
   },
 });
 

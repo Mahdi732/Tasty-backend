@@ -45,6 +45,8 @@ export const buildOpenApiSpec = () => {
                 properties: {
                   code: { type: 'string', example: 'ORDER_CREATE_FAILED' },
                   message: { type: 'string', example: 'Validation failed' },
+                  userMessage: { type: 'string', example: 'Something went wrong. Please try again.' },
+                  requestId: { type: 'string', example: 'req_1234567890abcdef' },
                 },
               },
             },

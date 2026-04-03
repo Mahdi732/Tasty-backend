@@ -20,6 +20,11 @@ export class RestaurantController {
     return ok(res, restaurant);
   };
 
+  listManagedRestaurants = async (req, res) => {
+    const restaurants = await this.restaurantService.listManagedRestaurants(req.auth);
+    return ok(res, restaurants);
+  };
+
   getOwnedRestaurant = async (req, res) => {
     const restaurant = await this.restaurantService.getManagerRestaurant(req.params.id, req.auth);
     return ok(res, restaurant);

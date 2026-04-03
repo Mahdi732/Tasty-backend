@@ -8,7 +8,7 @@ const attachRefreshToken = (res, env, refreshToken) => {
       secure: env.COOKIE_SECURE,
       sameSite: env.COOKIE_SAME_SITE,
       domain: env.COOKIE_DOMAIN || undefined,
-      path: '/auth',
+      path: env.REFRESH_COOKIE_PATH,
       maxAge: env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000,
     });
   }
@@ -21,7 +21,7 @@ const clearRefreshToken = (res, env) => {
       secure: env.COOKIE_SECURE,
       sameSite: env.COOKIE_SAME_SITE,
       domain: env.COOKIE_DOMAIN || undefined,
-      path: '/auth',
+      path: env.REFRESH_COOKIE_PATH,
     });
   }
 };

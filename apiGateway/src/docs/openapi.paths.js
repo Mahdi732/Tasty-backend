@@ -120,6 +120,148 @@
 
 /**
  * @openapi
+ * /api/v1/auth/logout-all:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Revoke all user sessions (optionally except current).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               exceptCurrentSession: { type: boolean, default: true }
+ *     responses:
+ *       200:
+ *         description: Sessions revoked.
+ */
+
+/**
+ * @openapi
+ * /api/v1/auth/sessions:
+ *   get:
+ *     tags: [Auth]
+ *     summary: List active sessions for current user.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sessions returned.
+ */
+
+/**
+ * @openapi
+ * /api/v1/auth/sessions/{sessionId}:
+ *   delete:
+ *     tags: [Auth]
+ *     summary: Revoke a specific session.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Session revoked.
+ */
+
+/**
+ * @openapi
+ * /api/v1/auth/oauth/{provider}/start:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Start OAuth authorization flow.
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [google, facebook]
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [login, link]
+ *           default: login
+ *       - in: query
+ *         name: platform
+ *         schema:
+ *           type: string
+ *           enum: [web, mobile, desktop, android, ios]
+ *           default: web
+ *       - in: query
+ *         name: appRedirect
+ *         schema:
+ *           type: string
+ *           format: uri
+ *     responses:
+ *       200:
+ *         description: OAuth authorization URL generated.
+ */
+
+/**
+ * @openapi
+ * /api/v1/auth/oauth/link/{provider}:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Start OAuth account-link flow.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [google, facebook]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               platform:
+ *                 type: string
+ *                 enum: [web, mobile, desktop, android, ios]
+ *                 default: web
+ *               appRedirect:
+ *                 type: string
+ *                 format: uri
+ *     responses:
+ *       200:
+ *         description: OAuth link authorization URL generated.
+ */
+
+/**
+ * @openapi
+ * /api/v1/auth/oauth/unlink/{provider}:
+ *   delete:
+ *     tags: [Auth]
+ *     summary: Unlink OAuth provider from current account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [google, facebook]
+ *     responses:
+ *       200:
+ *         description: Provider unlinked.
+ */
+
+/**
+ * @openapi
  * /api/v1/auth/email/start-verification:
  *   post:
  *     tags: [Auth]
@@ -386,6 +528,97 @@
  *         description: Payment accepted and processed.
  *       400:
  *         description: Invalid payload.
+ */
+
+/**
+ * @openapi
+ * /api/v1/restaurants:
+ *   get:
+ *     tags: [Restaurant]
+ *     summary: List public restaurants.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, minimum: 1, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+ *       - in: query
+ *         name: citySlug
+ *         schema: { type: string }
+ *       - in: query
+ *         name: q
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Public restaurants returned.
+ *   post:
+ *     tags: [Restaurant]
+ *     summary: Create restaurant (manager/superadmin).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Restaurant created.
+ *       403:
+ *         description: Role/status verification failed.
+ */
+
+/**
+ * @openapi
+ * /api/v1/restaurants/{citySlug}/{slug}:
+ *   get:
+ *     tags: [Restaurant]
+ *     summary: Get public restaurant details by city and slug.
+ *     parameters:
+ *       - in: path
+ *         name: citySlug
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Restaurant details returned.
+ *       404:
+ *         description: Restaurant not found.
+ */
+
+/**
+ * @openapi
+ * /api/v1/restaurants/{citySlug}/{slug}/menu:
+ *   get:
+ *     tags: [Restaurant]
+ *     summary: Get public menu projection for a restaurant.
+ *     parameters:
+ *       - in: path
+ *         name: citySlug
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: includeOutOfStock
+ *         schema: { type: boolean, default: false }
+ *     responses:
+ *       200:
+ *         description: Menu projection returned.
+ *       404:
+ *         description: Menu not available.
  */
 
 /**

@@ -1,0 +1,22 @@
+services:
+  user-service:
+    environment:
+      NODE_ENV: production
+      EXPOSE_VERIFICATION_CODES: "false"
+      SMS_PROVIDER: ${SMS_PROVIDER:-twilio}
+      COOKIE_SECURE: "true"
+      COOKIE_SAME_SITE: none
+      TRUST_PROXY: "1"
+      SMTP_ENABLED: "true"
+      # Provide provider credentials from shell or an untracked env file.
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      INFOBIP_BASE_URL: ${INFOBIP_BASE_URL:-}
+      INFOBIP_API_KEY: ${INFOBIP_API_KEY:-}
+      SMS_FROM_PHONE: ${SMS_FROM_PHONE:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}

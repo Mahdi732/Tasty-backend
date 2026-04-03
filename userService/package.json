@@ -10,7 +10,9 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration --runInBand",
     "lint": "eslint .",
-    "keys:generate": "node scripts/generate-keys.js"
+    "keys:generate": "node scripts/generate-keys.js",
+    "role:promote": "node scripts/promote-role.js",
+    "seed:dev": "node scripts/seed-dev-users.js"
   },
   "engines": {
     "node": ">=20.10.0"

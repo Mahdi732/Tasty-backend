@@ -15,6 +15,37 @@ export class OrderRepository {
     return this.model.find({ userId }).sort({ createdAt: -1 }).lean();
   }
 
+  listOutstandingDebtByUser(userId) {
+    return this.model.find({
+      userId: String(userId),
+      'debt.status': 'OUTSTANDING',
+      'debt.amount': { $gt: 0 },
+      'payment.status': { $ne: 'PAID' },
+    }).sort({ createdAt: -1 }).lean();
+  }
+
+  async clearPaidOutstandingDebtByUser(userId) {
+    const now = new Date();
+
+    await this.model.updateMany(
+      {
+        userId: String(userId),
+        'debt.status': 'OUTSTANDING',
+        'debt.amount': { $gt: 0 },
+        'payment.status': 'PAID',
+      },
+      {
+        $set: {
+          'debt.status': 'CLEARED',
+          'debt.amount': 0,
+          'debt.clearedAt': now,
+          'riskFlags.qrExpiredBlacklistTriggered': false,
+          'riskFlags.temporaryReview': false,
+        },
+      }
+    );
+  }
+
   listByRestaurant(restaurantId) {
     return this.model.find({ restaurantId: String(restaurantId) }).sort({ createdAt: -1 }).lean();
   }
@@ -32,6 +63,8 @@ export class OrderRepository {
       .find({
         'qr.expiresAt': { $lt: now },
         'qr.scannedAt': null,
+        'payment.status': { $ne: 'PAID' },
+        'debt.status': { $ne: 'CLEARED' },
         orderStatus: { $nin: ['EXPIRED', 'COMPLETED', 'CANCELLED'] },
       })
       .limit(limit)

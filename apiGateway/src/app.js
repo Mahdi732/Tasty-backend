@@ -32,6 +32,8 @@ export const buildApp = () => {
     return {
       code: String(normalized?.code || 'INTERNAL_ERROR'),
       message: String(normalized?.message || 'Unexpected error'),
+      userMessage: String(normalized?.userMessage || normalized?.message || 'Something went wrong. Please try again.'),
+      requestId: normalized?.requestId ? String(normalized.requestId) : undefined,
     };
   };
 

@@ -20,6 +20,11 @@ Production-grade Auth Service (Node.js + Express + MongoDB + Redis) for microser
 - OAuth: Google and Facebook implemented.
 - Email/password registration requires email verification (OTP-based).
 
+ID card encryption key requirement:
+
+- `ID_CARD_ENCRYPTION_KEY` must be a base64-encoded 32-byte key (AES-256-GCM).
+- Example key generation (PowerShell): `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))`
+
 ## OAuth multi-platform clients
 
 - OAuth client selection is now provider + platform based.
@@ -45,6 +50,14 @@ Production-grade Auth Service (Node.js + Express + MongoDB + Redis) for microser
 ## Postman testing
 
 - See `POSTMAN_TESTING.md` for a complete request-by-request Postman workflow aligned with the current API.
+
+## Local role management (dev)
+
+Promote an existing user to another role (for example manager or superadmin):
+
+- `npm run role:promote -- --email user@example.com --role manager`
+- Optional replace mode (remove old roles):
+   - `npm run role:promote -- --email user@example.com --role manager --replace`
 
 ## Architecture conclusion (Auth Service)
 

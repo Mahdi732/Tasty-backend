@@ -10,7 +10,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit --runInBand",
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration --runInBand",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "seed:dev": "node scripts/seed-dev-restaurants.js"
   },
   "engines": {
     "node": ">=20.10.0"

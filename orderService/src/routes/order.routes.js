@@ -22,6 +22,12 @@ export const buildOrderRoutes = ({
 
   router.post('/me', validate(createOrderSchema), asyncHandler(orderController.create));
   router.get('/me', asyncHandler(orderController.myOrders));
+  router.post(
+    '/:orderId/cancel',
+    validate(orderIdParamSchema, 'params'),
+    asyncHandler(orderController.cancelMyOrder)
+  );
+  router.get('/debts/me', asyncHandler(orderController.myDebtStatus));
 
   router.get(
     '/restaurant/:restaurantId',

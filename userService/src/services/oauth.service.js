@@ -33,7 +33,7 @@ export class OAuthService {
     return crypto.createHash('sha256').update(verifier).digest('base64url');
   }
 
-  async start(providerName, { mode, platform, currentUserId }) {
+  async start(providerName, { mode, platform, appRedirect, currentUserId }) {
     const provider = this.oauthProviderFactory.getProvider(providerName);
     const clientConfig = this.oauthClientConfigResolver.resolve(providerName, platform);
     const state = crypto.randomBytes(24).toString('base64url');
@@ -42,6 +42,7 @@ export class OAuthService {
       provider: providerName,
       platform: clientConfig.platform,
       mode,
+      appRedirect: appRedirect || null,
       currentUserId: currentUserId || null,
     };
 
@@ -108,10 +109,26 @@ export class OAuthService {
       if (!stateData.currentUserId) {
         throw new ApiError(401, ERROR_CODES.AUTH_UNAUTHORIZED, 'Linking requires authenticated user');
       }
-      return this.linkProviderAccount(stateData.currentUserId, profile);
+      const linkResult = await this.linkProviderAccount(stateData.currentUserId, profile);
+      return {
+        ...linkResult,
+        oauthContext: {
+          mode: stateData.mode,
+          platform: stateData.platform,
+          appRedirect: stateData.appRedirect || null,
+        },
+      };
     }
 
-    return this.loginOrRegister(profile, context);
+    const result = await this.loginOrRegister(profile, context);
+    return {
+      ...result,
+      oauthContext: {
+        mode: stateData.mode,
+        platform: stateData.platform,
+        appRedirect: stateData.appRedirect || null,
+      },
+    };
   }
 
   async linkProviderAccount(userId, profile) {
@@ -179,7 +196,7 @@ export class OAuthService {
           ? new Date(Date.now() + this.env.ACCOUNT_FACE_ACTIVATION_DEADLINE_DAYS * 24 * 60 * 60 * 1000)
           : null,
         status: emailVerified
-          ? USER_STATUS.PENDING_FACE_ACTIVATION
+          ? USER_STATUS.PENDING_PHONE_VERIFICATION
           : USER_STATUS.PENDING_EMAIL_VERIFICATION,
       });
     }

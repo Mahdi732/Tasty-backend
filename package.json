@@ -14,6 +14,8 @@
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "reset:dev:data": "node ./scripts/reset-dev-data.cjs",
+    "seed:dev": "npm --workspace userService run seed:dev -- --mongo-uri mongodb://tasty_user_app:user-app-pass-dev@localhost:27017/tasty_user?authSource=tasty_user && npm --workspace restaurantService run seed:dev -- --mongo-uri mongodb://tasty_restaurant_app:restaurant-app-pass-dev@localhost:27019/tasty_restaurant?authSource=tasty_restaurant --user-mongo-uri mongodb://tasty_user_app:user-app-pass-dev@localhost:27017/tasty_user?authSource=tasty_user",
     "dev:gateway": "npm --workspace apiGateway run dev",
     "dev:user": "npm --workspace userService run dev",
     "dev:order": "npm --workspace orderService run dev",

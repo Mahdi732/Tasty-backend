@@ -1,16 +1,7 @@
 import amqplib from 'amqplib';
 import { EVENTS } from '../constants/messaging.js';
 
-const extractOwnerIds = (payload) => {
-  const candidates = [
-    payload?.ownerId,
-    payload?.owner_id,
-    payload?.userId,
-    payload?.user_id,
-  ];
-
-  return [...new Set(candidates.filter(Boolean).map(String))];
-};
+const extractRestaurantId = (payload) => payload?.restaurantId || payload?.restaurant_id || null;
 
 export class PaymentConsumer {
   constructor({ url, exchange, queueName, routingKey, restaurantRepository, logger }) {
@@ -42,20 +33,23 @@ export class PaymentConsumer {
 
       try {
         const payload = JSON.parse(msg.content.toString('utf8'));
-        const ownerIds = extractOwnerIds(payload);
+        const restaurantId = extractRestaurantId(payload);
 
-        if (!ownerIds.length) {
-          this.logger?.warn({ payload }, 'payment_subscription_success_missing_owner_id');
+        if (!restaurantId) {
+          this.logger?.warn({ payload }, 'payment_subscription_success_missing_restaurant_id');
           this.channel.ack(msg);
           return;
         }
 
-        const result = await this.restaurantRepository.activateByOwnerIds(ownerIds);
+        const result = await this.restaurantRepository.activateByRestaurantId(restaurantId, {
+          subscriptionPlanId: payload?.planId || payload?.plan_id || null,
+          providerSubscriptionId: payload?.providerRef || payload?.provider_ref || null,
+        });
 
         this.logger?.info(
           {
             routingKey: this.routingKey,
-            ownerIds,
+            restaurantId,
             matchedCount: result.matchedCount,
             modifiedCount: result.modifiedCount,
           },

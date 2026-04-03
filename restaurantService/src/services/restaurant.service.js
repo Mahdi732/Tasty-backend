@@ -58,12 +58,12 @@ export class RestaurantService {
       auth.userId,
       ['OWNER']
     );
-    const hasDraftUnpaid = await this.restaurantRepository.existsDraftUnpaidByIds(ownerRestaurantIds);
-    if (hasDraftUnpaid) {
+    const hasUnresolvedUnpaid = await this.restaurantRepository.existsUnresolvedUnpaidByIds(ownerRestaurantIds);
+    if (hasUnresolvedUnpaid) {
       throw new ApiError(
         409,
         ERROR_CODES.CONFLICT,
-        'Cannot create another restaurant while an existing draft is unpaid'
+        'Cannot create another restaurant while an existing unresolved restaurant is unpaid'
       );
     }
 
@@ -89,6 +89,15 @@ export class RestaurantService {
       throw new ApiError(409, ERROR_CODES.CONFLICT, 'Membership-first creation requires ACTIVE subscription status');
     }
 
+    const membershipFirstVerification = creationFlow === 'MEMBERSHIP_FIRST'
+      ? {
+        status: VERIFICATION_STATUS.VERIFIED,
+        verifiedAt: new Date(),
+        verifiedBy: auth.userId,
+        reviewNotes: 'Auto-verified from paid opening flow',
+      }
+      : null;
+
     let initialStatus = RESTAURANT_STATUS.DRAFT;
     let activationBlockers = [];
     let activatedAt = null;
@@ -96,7 +105,7 @@ export class RestaurantService {
     if (creationFlow === 'MEMBERSHIP_FIRST') {
       const gateResult = this.activationGateService.evaluate({
         subscription: initialSubscription,
-        verification: { status: VERIFICATION_STATUS.UNVERIFIED },
+        verification: membershipFirstVerification,
       });
       initialStatus = gateResult.nextStatus;
       activationBlockers = gateResult.activationBlockers;
@@ -125,6 +134,7 @@ export class RestaurantService {
       activationBlockers,
       activatedAt,
       subscription: initialSubscription,
+      ...(membershipFirstVerification ? { verification: membershipFirstVerification } : {}),
       createdBy: auth.userId,
       updatedBy: auth.userId,
     });
@@ -155,7 +165,7 @@ export class RestaurantService {
     const restaurant = await this.restaurantRepository.findById(restaurantId);
     if (!restaurant) throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Restaurant not found');
 
-    if (![RESTAURANT_STATUS.DRAFT, RESTAURANT_STATUS.PENDING_SUBSCRIPTION, RESTAURANT_STATUS.PENDING_VERIFICATION].includes(restaurant.status)) {
+    if (![RESTAURANT_STATUS.DRAFT, RESTAURANT_STATUS.PENDING_SUBSCRIPTION, RESTAURANT_STATUS.PENDING_VERIFICATION, RESTAURANT_STATUS.ACTIVE].includes(restaurant.status)) {
       throw new ApiError(409, ERROR_CODES.CONFLICT, 'Restaurant is not editable in current status');
     }
 
@@ -211,6 +221,19 @@ export class RestaurantService {
     const restaurant = await this.restaurantRepository.findById(restaurantId);
     if (!restaurant) throw new ApiError(404, ERROR_CODES.NOT_FOUND, 'Restaurant not found');
     return restaurant;
+  }
+
+  async listManagedRestaurants(auth) {
+    if (auth.roles?.includes('superadmin')) {
+      return [];
+    }
+
+    const managedRestaurantIds = await this.restaurantUserRepository.findRestaurantIdsByUserAndRoles(
+      auth.userId,
+      ['OWNER', 'MANAGER']
+    );
+
+    return this.restaurantRepository.findByIds(managedRestaurantIds);
   }
 
   async addStaffMember(restaurantId, auth, payload) {

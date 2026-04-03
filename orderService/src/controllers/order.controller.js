@@ -11,9 +11,19 @@ export class OrderController {
     return ok(res, order, 201);
   };
 
+  cancelMyOrder = async (req, res) => {
+    const order = await this.orderService.cancelMyOrder(req.params.orderId, req.auth, buildEventHeaders(req));
+    return ok(res, order);
+  };
+
   myOrders = async (req, res) => {
     const orders = await this.orderService.listMyOrders(req.auth);
     return ok(res, orders);
+  };
+
+  myDebtStatus = async (req, res) => {
+    const debtStatus = await this.orderService.getMyDebtStatus(req.auth);
+    return ok(res, debtStatus);
   };
 
   restaurantOrders = async (req, res) => {

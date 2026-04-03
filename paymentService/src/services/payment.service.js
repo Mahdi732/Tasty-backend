@@ -18,11 +18,15 @@ export class PaymentService {
   }
 
   async createSubscriptionPayment(payload, headers = {}) {
+    const restaurantId = typeof payload.restaurantId === 'string' && payload.restaurantId.trim()
+      ? payload.restaurantId.trim()
+      : null;
+
     const pending = await this.transactionRepository.create({
       transactionType: PAYMENT_TRANSACTION_TYPE.SUBSCRIPTION,
       status: PAYMENT_STATUS.PENDING,
       userId: String(payload.userId),
-      restaurantId: String(payload.restaurantId),
+      restaurantId,
       planId: String(payload.planId),
       amount: Number(payload.amount || 0),
       currency: payload.currency || 'USD',
@@ -42,32 +46,38 @@ export class PaymentService {
       failedReason: null,
     });
 
-    const eventPayload = {
-      ownerId: String(payload.userId),
-      restaurantId: String(payload.restaurantId),
-      planId: String(payload.planId),
-      transactionId: String(success._id),
-      providerRef: providerCharge.providerRef,
-      amount: Number(success.amount || 0),
-      currency: success.currency || 'USD',
-      status: PAYMENT_STATUS.SUCCESS,
-    };
+    let emittedEvent = null;
+    let eventPayload = null;
 
-    await this.domainEventPublisher.publish(
-      EVENTS.PAYMENT_SUBSCRIPTION_SUCCESS,
-      eventPayload,
-      {
-        userId: String(payload.userId),
-        restaurantId: String(payload.restaurantId),
-        paymentContext: 'SUBSCRIPTION',
-        correlationId: headers.correlationId,
-        causationId: headers.causationId,
-      }
-    );
+    if (restaurantId) {
+      emittedEvent = EVENTS.PAYMENT_SUBSCRIPTION_SUCCESS;
+      eventPayload = {
+        ownerId: String(payload.userId),
+        restaurantId,
+        planId: String(payload.planId),
+        transactionId: String(success._id),
+        providerRef: providerCharge.providerRef,
+        amount: Number(success.amount || 0),
+        currency: success.currency || 'USD',
+        status: PAYMENT_STATUS.SUCCESS,
+      };
+
+      await this.domainEventPublisher.publish(
+        emittedEvent,
+        eventPayload,
+        {
+          userId: String(payload.userId),
+          restaurantId,
+          paymentContext: 'SUBSCRIPTION',
+          correlationId: headers.correlationId,
+          causationId: headers.causationId,
+        }
+      );
+    }
 
     return {
       transaction: success,
-      emittedEvent: EVENTS.PAYMENT_SUBSCRIPTION_SUCCESS,
+      emittedEvent,
       eventPayload,
     };
   }

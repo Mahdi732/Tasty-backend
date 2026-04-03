@@ -35,6 +35,7 @@ const fulfillmentSchema = new mongoose.Schema(
 
 const qrSchema = new mongoose.Schema(
   {
+    token: { type: String, default: null },
     tokenHash: { type: String, required: true },
     expiresAt: { type: Date, required: true },
     scannedAt: { type: Date, default: null },

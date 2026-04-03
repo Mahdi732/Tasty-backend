@@ -18,6 +18,8 @@ export class UserService {
   }
 
   toProfile(user) {
+    const isActive = user.status === USER_STATUS.ACTIVE;
+
     return {
       id: user.id,
       email: user.email,
@@ -25,9 +27,10 @@ export class UserService {
       phoneNumber: user.phoneNumber,
       roles: user.roles,
       status: user.status,
-      isEmailVerified: user.isEmailVerified,
-      isPhoneVerified: user.isPhoneVerified,
-      isFaceVerified: user.isFaceVerified,
+      isEmailVerified: isActive ? true : Boolean(user.isEmailVerified),
+      isPhoneVerified: isActive ? true : Boolean(user.isPhoneVerified),
+      isFaceVerified: isActive ? true : Boolean(user.isFaceVerified),
+      isCardVerified: isActive,
       faceIdentityId: user.faceIdentityId,
       activationDeadline: user.activationDeadline,
       settings: user.settings,
@@ -79,7 +82,19 @@ export class UserService {
     });
 
     if (!idFaceCheck?.matched || idFaceCheck?.livenessStatus !== 'LIVE') {
-      throw new ApiError(403, ERROR_CODES.FACE_ACTIVATION_BLOCKED, 'ID-face verification failed');
+      throw new ApiError(
+        403,
+        ERROR_CODES.FACE_ACTIVATION_BLOCKED,
+        'ID-face verification failed',
+        {
+          score: idFaceCheck?.score,
+          threshold: idFaceCheck?.threshold,
+          livenessStatus: idFaceCheck?.livenessStatus,
+          reasons: idFaceCheck?.reasons,
+        },
+        undefined,
+        'We could not match your selfie with your ID card. Use a clear, front-facing photo in good lighting and try again.'
+      );
     }
 
     const searchResult = await this.faceRecognitionClient.searchWatchlists({
@@ -91,7 +106,17 @@ export class UserService {
 
     const topCandidate = Array.isArray(searchResult?.candidates) ? searchResult.candidates[0] : null;
     if (searchResult?.decision === 'MATCH_BLOCK' && ['BANNED', 'DEBTOR'].includes(topCandidate?.listType)) {
-      throw new ApiError(403, ERROR_CODES.FACE_ACTIVATION_BLOCKED, `Activation blocked: ${topCandidate.listType}`);
+      throw new ApiError(
+        403,
+        ERROR_CODES.FACE_ACTIVATION_BLOCKED,
+        `Activation blocked: ${topCandidate.listType}`,
+        {
+          matchedListType: topCandidate.listType,
+          candidateScore: topCandidate.score,
+        },
+        undefined,
+        'You are already registered with this face, and the matched account is currently banned. Please pay your outstanding amount to reactivate your account.'
+      );
     }
 
     const activationResult = await this.faceRecognitionClient.activateIdentity({

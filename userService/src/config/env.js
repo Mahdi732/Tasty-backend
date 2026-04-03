@@ -172,6 +172,7 @@ const envSchema = z.object({
 
   REFRESH_TOKEN_TRANSPORT: z.enum(['cookie', 'body', 'both']).default('both'),
   REFRESH_COOKIE_NAME: z.string().default('rt'),
+  REFRESH_COOKIE_PATH: z.string().default('/api/v1/auth'),
   COOKIE_SECURE: envBoolean().default(true),
   COOKIE_DOMAIN: z.string().optional().default(''),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
@@ -255,8 +256,13 @@ for (const warning of warnings) {
   console.warn(warning);
 }
 
+const cookieSecure = process.env.COOKIE_SECURE === undefined
+  ? parsed.data.NODE_ENV === 'production'
+  : parsed.data.COOKIE_SECURE;
+
 export const env = {
   ...parsed.data,
+  COOKIE_SECURE: cookieSecure,
   OAUTH: oauth,
   OAUTH_PLATFORMS: OAUTH_PLATFORMS,
   CORS_ORIGINS_LIST: parsed.data.CORS_ORIGINS.split(',').map((origin) => origin.trim()),

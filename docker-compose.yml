@@ -255,6 +255,8 @@ services:
     environment:
       NOTIFICATION_SOCKET_TARGET: http://notification-service:4003
       USER_HTTP_BASE_URL: http://user-service:4000
+      RESTAURANT_HTTP_BASE_URL: http://restaurant-service:4010
+      ORDER_HTTP_BASE_URL: http://order-service:4020
       PAYMENT_HTTP_BASE_URL: http://payment-service:4050
     depends_on:
       - user-service
@@ -266,6 +268,7 @@ services:
     restart: unless-stopped
     ports:
       - '443:443'
+      - '8080:8080'
 
 volumes:
   user_data:

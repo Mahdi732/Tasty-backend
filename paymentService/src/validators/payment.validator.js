@@ -9,7 +9,7 @@ const paymentMethodSchema = z.object({
 
 export const subscribePaymentSchema = z.object({
   userId: z.string().min(1),
-  restaurantId: z.string().min(1),
+  restaurantId: z.string().min(1).optional(),
   planId: z.string().min(1),
   amount: z.coerce.number().nonnegative().default(0),
   currency: z.string().default('USD'),

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
 import https from 'https';
 import { randomUUID } from 'crypto';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -51,19 +52,30 @@ const socketProxy = createProxyMiddleware({
 
 app.use('/socket.io', socketProxy);
 
-const server = https.createServer({ key, cert }, app);
+const attachSocketUpgradeProxy = (server) => {
+  server.on('upgrade', (req, socket, head) => {
+    if (!req.url?.startsWith('/socket.io')) {
+      return;
+    }
 
-server.on('upgrade', (req, socket, head) => {
-  if (!req.url?.startsWith('/socket.io')) {
-    return;
-  }
+    const correlationId = getCorrelationId(req);
+    req.headers['x-correlation-id'] = correlationId;
+    req.headers['x-request-id'] = correlationId;
+    socketProxy.upgrade(req, socket, head);
+  });
+};
 
-  const correlationId = getCorrelationId(req);
-  req.headers['x-correlation-id'] = correlationId;
-  req.headers['x-request-id'] = correlationId;
-  socketProxy.upgrade(req, socket, head);
-});
+const httpsServer = https.createServer({ key, cert }, app);
+attachSocketUpgradeProxy(httpsServer);
 
-server.listen(env.PORT, () => {
+httpsServer.listen(env.PORT, () => {
   logger.info({ port: env.PORT, socketTarget: env.NOTIFICATION_SOCKET_TARGET }, 'api_gateway_https_started');
 });
+
+if (env.NODE_ENV !== 'production') {
+  const httpServer = http.createServer(app);
+  attachSocketUpgradeProxy(httpServer);
+  httpServer.listen(env.HTTP_REDIRECT_PORT, () => {
+    logger.info({ port: env.HTTP_REDIRECT_PORT }, 'api_gateway_http_started_for_local_dev');
+  });
+}
